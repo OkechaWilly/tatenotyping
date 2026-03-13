@@ -2,26 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #F7F4EF;
+    --surface: #FFFFFF;
+    --surface-2: #F0EDE7;
+    --surface-3: #E8E4DD;
+    --border: #E2DDD6;
+    --border-strong: #C8C2B8;
+    --ink: #1A1714;
+    --ink-2: #4A4540;
+    --ink-3: #8A827A;
+    --ink-4: #B8B0A8;
+    --accent: #C4431A;
+    --accent-light: #F5E8E2;
+    --accent-mid: rgba(196,67,26,0.12);
+    --accent-2: #2D6A4F;
+    --accent-2-light: #E8F2ED;
+    --green: #2D6A4F;
+    --green-light: #E8F2ED;
+    --gold: #B8860B;
+    --gold-light: #FAF3E0;
+    --blue: #2E5F8A;
+    --blue-light: #E8EFF6;
+    --correct: #2D6A4F;
+    --error: #C4431A;
+    --pending: #C8C2B8;
+    --cursor-color: #1A1714;
+    --f-pinky:  #6B4F9E;
+    --f-ring:   #2D6A4F;
+    --f-middle: #B8860B;
+    --f-index:  #C4431A;
+    --f-thumb:  #4A7DA8;
+    --radius: 6px;
+    --shadow-sm: 0 1px 3px rgba(26,23,20,0.07), 0 0 0 1px rgba(26,23,20,0.04);
+    --shadow: 0 2px 8px rgba(26,23,20,0.09), 0 0 0 1px rgba(26,23,20,0.04);
+    --shadow-md: 0 4px 20px rgba(26,23,20,0.11), 0 0 0 1px rgba(26,23,20,0.04);
+  }
+
+  /* Optional Dark Mode overrides */
+  @media (prefers-color-scheme: dark) {
+    /* To be implemented if dark mode is configured */
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  body {
+    @apply bg-bg text-ink min-h-screen text-[14px] leading-relaxed;
+  }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .animate-pulse-key {
+    animation: pulse-key 0.65s ease infinite alternate;
+  }
+  @keyframes pulse-key {
+    from { filter: brightness(1); }
+    to { filter: brightness(1.14); box-shadow: 0 3px 0 #943212, 0 0 10px rgba(196,67,26,0.28); }
   }
 }
