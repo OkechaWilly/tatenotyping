@@ -7,13 +7,17 @@ export interface TypingStats {
   errors: number;
 }
 
-export function useTypingEngine(initialText: string, totalTime: number) {
+export function useTypingEngine(
+  initialText: string, 
+  totalTime: number, 
+  onComplete?: (stats: TypingStats) => void
+) {
   const [text, setText] = useState(initialText);
   const [typed, setTyped] = useState("");
   const [isActive, setIsActive] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const [timeLeft, setTimeLeft] = useState(totalTime);
-  const [startTime, setStartTime] = useState<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
 
   const [errors, setErrors] = useState(0);
   const [totalKeystrokes, setTotalKeystrokes] = useState(0);
@@ -22,7 +26,7 @@ export function useTypingEngine(initialText: string, totalTime: number) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Derived stats
-  const timeElapsed = startTime ? (Date.now() - startTime) / 1000 : 0;
+  const timeElapsed = startTimeRef.current ? (Date.now() - startTimeRef.current) / 1000 : 0;
   const minutesElapsed = timeElapsed / 60;
   
   const calculateWpm = () => {
@@ -54,10 +58,19 @@ export function useTypingEngine(initialText: string, totalTime: number) {
     errors,
   };
 
+  const [hasCompleted, setHasCompleted] = useState(false);
+
+  useEffect(() => {
+    if (isFinished && !hasCompleted && onComplete) {
+      onComplete(stats);
+      setHasCompleted(true);
+    }
+  }, [isFinished, hasCompleted, onComplete, stats]);
+
   const startTest = useCallback(() => {
     setIsActive(true);
     setIsFinished(false);
-    setStartTime(Date.now());
+    startTimeRef.current = Date.now();
     if (inputRef.current) inputRef.current.focus();
   }, []);
 
@@ -66,8 +79,9 @@ export function useTypingEngine(initialText: string, totalTime: number) {
     setTyped("");
     setIsActive(false);
     setIsFinished(false);
+    setHasCompleted(false);
     setTimeLeft(totalTime);
-    setStartTime(null);
+    startTimeRef.current = null;
     setErrors(0);
     setTotalKeystrokes(0);
     if (timerRef.current) clearInterval(timerRef.current);
@@ -105,7 +119,7 @@ export function useTypingEngine(initialText: string, totalTime: number) {
 
   // Timer effect
   useEffect(() => {
-    if (isActive && !isFinished) {
+    if (isActive && !isFinished && totalTime > 0) {
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {

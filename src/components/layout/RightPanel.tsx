@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 export default function RightPanel() {
   const [accuracy] = useState(97); // This will eventually be driven by real data
@@ -12,6 +12,14 @@ export default function RightPanel() {
     ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
     ["Z", "X", "C", "V", "B", "N", "M"],
   ];
+
+  const heatmapErrors = useMemo(() => {
+    const map: Record<string, { isError: boolean, errorLevel: number }> = {};
+    heatmapRows.flat().forEach(k => { 
+      map[k] = { isError: Math.random() > 0.8, errorLevel: Math.random() }; 
+    });
+    return map;
+  }, []);
 
   return (
     <aside className="border-l border-border bg-surface px-4 py-6 flex flex-col gap-5 overflow-y-auto hidden lg:flex">
@@ -56,9 +64,7 @@ export default function RightPanel() {
           {heatmapRows.map((row, i) => (
             <div key={i} className="flex gap-[3px] justify-center">
               {row.map((key) => {
-                // Mock random errors
-                const isError = Math.random() > 0.8;
-                const errorLevel = Math.random();
+                const { isError, errorLevel } = heatmapErrors[key] || { isError: false, errorLevel: 0 };
                 let bgClass = "bg-surface-2 border-border text-ink-3";
                 if (isError) {
                   if (errorLevel > 0.6) bgClass = "bg-[#C4431A8C] border-[#C4431AB3] text-white"; // high

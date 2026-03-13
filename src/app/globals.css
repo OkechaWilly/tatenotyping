@@ -46,6 +46,25 @@
   }
 }
 
+[data-theme="dark"] {
+  --bg:           #131110;
+  --surface:      #1C1A18;
+  --surface-2:    #232120;
+  --surface-3:    #2A2826;
+  --border:       #2E2C2A;
+  --border-strong:#3A3835;
+  --ink:          #F0EDE7;
+  --ink-2:        #C8C2B8;
+  --ink-3:        #8A827A;
+  --ink-4:        #5A5450;
+  --accent:       #E05520;
+  --accent-light: #2A1A14;
+  --gold-light:   #1E1A0E;
+  --green-light:  #0E1A14;
+  --blue-light:   #0E1620;
+  --cursor-color: #F0EDE7;
+}
+
 @layer base {
   body {
     @apply bg-bg text-ink min-h-screen text-[14px] leading-relaxed;

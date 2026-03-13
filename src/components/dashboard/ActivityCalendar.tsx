@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+
 export default function ActivityCalendar() {
   const weeks = 18;
   const daysPerWeek = 7;
@@ -27,7 +29,7 @@ export default function ActivityCalendar() {
     return grid;
   };
 
-  const gridData = generateGrid();
+  const gridData = useMemo(() => generateGrid(), []);
   const months = ["Jan", "Feb", "Mar", "Apr"]; // Approximation for 18 weeks
 
   const getDayClass = (level: number) => {

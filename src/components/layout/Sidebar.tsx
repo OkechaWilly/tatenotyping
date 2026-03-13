@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useTypingContext, TypingMode, Duration, Difficulty } from "@/context/TypingContext";
 
 export default function Sidebar() {
-  const [activeMode, setActiveMode] = useState("words");
-  const [duration, setDuration] = useState(30);
-  const [difficulty, setDifficulty] = useState("Intermediate");
+  const { mode: activeMode, setMode: setActiveMode, duration, setDuration, difficulty, setDifficulty } = useTypingContext();
 
   const modes = [
     { id: "words", name: "Words", sub: "Common vocab", icon: "Aa", iconStyle: "text-[13px]" },
@@ -37,7 +35,7 @@ export default function Sidebar() {
           {modes.map((mode) => (
             <div
               key={mode.id}
-              onClick={() => setActiveMode(mode.id)}
+              onClick={() => setActiveMode(mode.id as TypingMode)}
               className={`flex items-center gap-2.5 px-2.5 py-2 rounded cursor-pointer transition-all duration-150 border ${
                 activeMode === mode.id
                   ? "bg-accent-light border-[#C4431A26]"
@@ -69,7 +67,7 @@ export default function Sidebar() {
           {durations.map((dur) => (
             <button
               key={dur.val}
-              onClick={() => setDuration(dur.val)}
+              onClick={() => setDuration(dur.val as Duration)}
               className={`border rounded px-1 py-1.5 font-mono text-[11px] font-medium cursor-pointer text-center transition-all duration-150 ${
                 duration === dur.val
                   ? "bg-ink text-white border-ink"
@@ -89,7 +87,7 @@ export default function Sidebar() {
           {difficulties.map((diff) => (
             <button
               key={diff.name}
-              onClick={() => setDifficulty(diff.name)}
+              onClick={() => setDifficulty(diff.name as Difficulty)}
               className={`flex items-center justify-between px-2.5 py-[7px] rounded border cursor-pointer text-xs font-medium transition-all duration-150 ${
                 difficulty === diff.name
                   ? "bg-ink text-white border-ink"

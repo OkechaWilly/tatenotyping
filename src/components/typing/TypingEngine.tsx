@@ -77,7 +77,7 @@ export default function TypingEngine({ engine }: TypingEngineProps) {
       {/* Action Bar */}
       <div className="flex items-center justify-center gap-3 px-8 py-4 border-t border-border bg-surface shrink-0">
         <button 
-          onClick={() => resetTest()} 
+          onClick={() => resetTest(text)} 
           className="flex items-center gap-1.5 px-4.5 py-2 rounded border border-border bg-surface-2 font-body text-[13px] font-medium text-ink-2 cursor-pointer transition-all duration-150 hover:border-border-strong hover:bg-surface hover:text-ink">
           ↺ Restart <kbd className="bg-surface-2 border border-border-strong rounded-[3px] px-1.5 py-[1px] font-mono text-[11px] text-ink ml-1">Tab</kbd>
         </button>
