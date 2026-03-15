@@ -1,49 +1,95 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/lib/supabase/client";
+
 export default function KPICards() {
+  const { user, profile } = useAuth();
+  const [stats, setStats] = useState({
+    bestWpm: 0,
+    avgAccuracy: 0,
+    totalSessions: 0,
+    totalHours: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchStats = async () => {
+      const supabase = createClient();
+      
+      // Fetch all sessions (simplified, for production use aggregation/RPC)
+      const { data: sessions, error } = await supabase
+        .from("sessions")
+        .select("wpm, accuracy, duration")
+        .eq("user_id", user.id);
+
+      if (sessions && sessions.length > 0) {
+        const bestWpm = Math.max(...sessions.map(s => s.wpm));
+        const avgAccuracy = Math.round(sessions.reduce((acc, s) => acc + s.accuracy, 0) / sessions.length);
+        const totalDurationChars = sessions.reduce((acc, s) => acc + s.duration, 0);
+        const totalHours = Math.round((totalDurationChars / 3600) * 10) / 10;
+        
+        setStats({
+          bestWpm,
+          avgAccuracy,
+          totalSessions: sessions.length,
+          totalHours,
+        });
+      }
+      setLoading(false);
+    };
+
+    fetchStats();
+  }, [user]);
+
   const kpis = [
     {
       icon: "⚡",
       label: "Best WPM",
-      value: "84",
+      value: loading ? "..." : stats.bestWpm.toString(),
       sub: "wpm",
-      delta: "↑ +6 this week",
-      deltaColor: "text-green",
-      hoverClass: "hover:before:bg-accent",
+      delta: "Personal best",
+      deltaColor: "text-ink-3",
+      hoverClass: "bg-accent",
     },
     {
       icon: "◎",
       label: "Avg Accuracy",
-      value: "96",
+      value: loading ? "..." : stats.avgAccuracy.toString(),
       sub: "%",
-      delta: "↑ +1.2% this week",
-      deltaColor: "text-green",
-      hoverClass: "hover:before:bg-green",
+      delta: "Session average",
+      deltaColor: "text-ink-3",
+      hoverClass: "bg-green",
     },
     {
       icon: "🔥",
       label: "Current Streak",
-      value: "7",
+      value: loading ? "..." : (profile?.streak_current || 0).toString(),
       sub: "days",
-      delta: "Best: 21 days",
-      deltaColor: "text-ink-3", // neutral for simple text
-      hoverClass: "hover:before:bg-gold",
+      delta: `Best: ${profile?.streak_best || 0} days`,
+      deltaColor: "text-ink-3",
+      hoverClass: "bg-gold",
     },
     {
       icon: "⏱",
       label: "Time Practiced",
-      value: "18",
+      value: loading ? "..." : stats.totalHours.toString(),
       sub: "hrs",
-      delta: "↑ 2.4h this week",
-      deltaColor: "text-green",
-      hoverClass: "hover:before:bg-blue",
+      delta: "All time",
+      deltaColor: "text-ink-3",
+      hoverClass: "bg-blue",
     },
     {
       icon: "✓",
       label: "Sessions",
-      value: "342",
+      value: loading ? "..." : stats.totalSessions.toString(),
       sub: "",
-      delta: "↑ 12 this week",
-      deltaColor: "text-green",
-      hoverClass: "hover:before:bg-ink",
+      delta: "Completed tests",
+      deltaColor: "text-ink-3",
+      hoverClass: "bg-ink",
     },
   ];
 
@@ -54,7 +100,7 @@ export default function KPICards() {
           key={i}
           className={`bg-surface border border-border rounded-lg px-4 py-[18px] flex flex-col gap-1.5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-px cursor-default relative overflow-hidden group`}
         >
-          <div className={`absolute top-0 left-0 right-0 h-[2px] opacity-0 transition-opacity duration-200 group-hover:opacity-100 ${kpi.hoverClass.replace('hover:before:', '')}`} />
+          <div className={`absolute top-0 left-0 right-0 h-[2px] opacity-0 transition-opacity duration-200 group-hover:opacity-100 ${kpi.hoverClass}`} />
           
           <div className="absolute right-3.5 top-3.5 text-lg opacity-20">{kpi.icon}</div>
           

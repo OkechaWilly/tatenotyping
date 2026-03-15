@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 export interface TypingStats {
   wpm: number;
@@ -7,9 +7,12 @@ export interface TypingStats {
   errors: number;
 }
 
+export type Difficulty = "Beginner" | "Intermediate" | "Advanced";
+
 export function useTypingEngine(
   initialText: string, 
   totalTime: number, 
+  difficulty: Difficulty = "Intermediate",
   onComplete?: (stats: TypingStats) => void
 ) {
   const [text, setText] = useState(initialText);
@@ -29,34 +32,23 @@ export function useTypingEngine(
   const timeElapsed = startTimeRef.current ? (Date.now() - startTimeRef.current) / 1000 : 0;
   const minutesElapsed = timeElapsed / 60;
   
-  const calculateWpm = () => {
-    if (minutesElapsed <= 0) return 0;
+  const stats: TypingStats = useMemo(() => {
     // Standard WPM: (correct chars / 5) / minutes
-    // Typed correctness
     let correctChars = 0;
     for (let i = 0; i < typed.length; i++) {
         if (typed[i] === text[i]) correctChars++;
     }
-    return Math.max(0, Math.round((correctChars / 5) / minutesElapsed));
-  };
+    const wpm = minutesElapsed <= 0 ? 0 : Math.max(0, Math.round((correctChars / 5) / minutesElapsed));
+    const rawWpm = minutesElapsed <= 0 ? 0 : Math.max(0, Math.round((typed.length / 5) / minutesElapsed));
+    
+    let accuracy = 100;
+    if (totalKeystrokes > 0) {
+      const correctKeystrokes = totalKeystrokes - errors;
+      accuracy = Math.max(0, Math.round((correctKeystrokes / totalKeystrokes) * 100));
+    }
 
-  const calculateRawWpm = () => {
-    if (minutesElapsed <= 0) return 0;
-    return Math.max(0, Math.round((typed.length / 5) / minutesElapsed));
-  };
-
-  const calculateAccuracy = () => {
-    if (totalKeystrokes === 0) return 100;
-    const correctKeystrokes = totalKeystrokes - errors;
-    return Math.max(0, Math.round((correctKeystrokes / totalKeystrokes) * 100));
-  };
-
-  const stats: TypingStats = {
-    wpm: calculateWpm(),
-    rawWpm: calculateRawWpm(),
-    accuracy: calculateAccuracy(),
-    errors,
-  };
+    return { wpm, rawWpm, accuracy, errors };
+  }, [typed, text, minutesElapsed, totalKeystrokes, errors]);
 
   const [hasCompleted, setHasCompleted] = useState(false);
 
@@ -97,16 +89,36 @@ export function useTypingEngine(
     if (val.length > text.length) return;
 
     setTyped(val);
-    setTotalKeystrokes((prev) => prev + 1);
-
     // Check for new errors
     if (val.length > typed.length) {
       const charTyped = val[val.length - 1];
       const charExpected = text[val.length - 1];
+      
       if (charTyped !== charExpected) {
         setErrors((prev) => prev + 1);
+        
+        // Advanced: Sudden Death - any error fails/resets the test
+        if (difficulty === "Advanced") {
+          setIsFinished(true);
+          setIsActive(false);
+          if (timerRef.current) clearInterval(timerRef.current);
+          return;
+        }
       }
     }
+
+    // Intermediate: Strict - cannot proceed if current char is wrong
+    if (difficulty === "Intermediate" && val.length > 0) {
+      if (val[val.length - 1] !== text[val.length - 1]) {
+        // If the last typed character is incorrect, prevent further typing
+        // by not updating `typed` and `totalKeystrokes` for this input.
+        // This effectively makes the input field "stuck" until the error is corrected.
+        return; 
+      }
+    }
+
+    setTyped(val);
+    setTotalKeystrokes((prev) => prev + 1);
 
     // Check for completion by length
     if (val.length === text.length) {
@@ -115,7 +127,7 @@ export function useTypingEngine(
        if (timerRef.current) clearInterval(timerRef.current);
     }
 
-  }, [isActive, text, typed, startTest]);
+  }, [isActive, text, typed, startTest, difficulty]);
 
   // Timer effect
   useEffect(() => {
@@ -135,7 +147,7 @@ export function useTypingEngine(
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, isFinished]);
+  }, [isActive, isFinished, totalTime]);
 
   // Keep focus on click anywhere if active
   const focusInput = () => {
@@ -154,5 +166,6 @@ export function useTypingEngine(
     startTest,
     resetTest,
     focusInput,
+    difficulty,
   };
 }

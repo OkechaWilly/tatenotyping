@@ -4,30 +4,52 @@ import { useTypingContext } from "@/context/TypingContext";
 import StatsBar from "./StatsBar";
 import TypingEngine from "./TypingEngine";
 import { useTypingEngine, TypingStats } from "@/hooks/useTypingEngine";
+import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
-
-const DEFAULT_TEXT = "the quick brown fox jumps over the lazy dog while the sun sets behind the mountains casting long shadows across the valley floor every great developer you know got there by solving problems";
+import { TYPING_DATA } from "@/data/typingData";
+import { useEffect, useState } from "react";
 
 export default function TypingContainer() {
-  const { duration, mode } = useTypingContext();
+  const { duration, mode, difficulty } = useTypingContext();
+  const { user } = useAuth();
+  const [text, setText] = useState("");
   
+  // Re-generate text when mode changes
+  useEffect(() => {
+    const data = TYPING_DATA[mode as keyof typeof TYPING_DATA] || TYPING_DATA.words;
+    let newText = "";
+    if (mode === "realworld") {
+      const proseData = TYPING_DATA.prose;
+      newText = proseData[Math.floor(Math.random() * proseData.length)];
+    } else if (mode === "words" || mode === "numbers") {
+      newText = [...data].sort(() => Math.random() - 0.5).slice(0, 25).join(" ");
+    } else {
+      newText = data[Math.floor(Math.random() * data.length)];
+    }
+    setText(newText);
+  }, [mode]);
+
   const handleSessionComplete = async (stats: TypingStats) => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return; // guest mode — don't save
+    if (!user) return; // Guest mode - don't save
     
-    await supabase.from("sessions").insert({
-      user_id: user.id,
-      wpm: stats.wpm,
-      raw_wpm: stats.rawWpm,
-      accuracy: stats.accuracy,
-      errors: stats.errors,
-      mode: mode,
-      duration: duration,
+    const { saveSession } = await import("@/lib/supabase/sessions");
+    await saveSession({
+      userId: user.id,
+      stats,
+      mode,
+      duration,
+      textUsed: text,
     });
   };
 
-  const engine = useTypingEngine(DEFAULT_TEXT, duration, handleSessionComplete);
+  const engine = useTypingEngine(text, duration, difficulty, handleSessionComplete);
+
+  // Sync engine with text updates
+  useEffect(() => {
+    if (text) {
+      engine.resetTest(text);
+    }
+  }, [text, duration, difficulty, engine]);
 
   return (
     <main className="flex flex-col bg-bg overflow-hidden relative flex-1">
@@ -40,7 +62,7 @@ export default function TypingContainer() {
         totalTime={duration}
       />
       <div className="flex-1 overflow-hidden">
-        <TypingEngine engine={engine} />
+        <TypingEngine engine={engine} mode={mode} />
       </div>
     </main>
   );

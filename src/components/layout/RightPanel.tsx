@@ -7,11 +7,11 @@ export default function RightPanel() {
   const circum = 226.2;
   const strokeDashoffset = circum - (accuracy / 100) * circum;
 
-  const heatmapRows = [
+  const heatmapRows = useMemo(() => [
     ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
     ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
     ["Z", "X", "C", "V", "B", "N", "M"],
-  ];
+  ], []);
 
   const heatmapErrors = useMemo(() => {
     const map: Record<string, { isError: boolean, errorLevel: number }> = {};
@@ -19,7 +19,7 @@ export default function RightPanel() {
       map[k] = { isError: Math.random() > 0.8, errorLevel: Math.random() }; 
     });
     return map;
-  }, []);
+  }, [heatmapRows]);
 
   return (
     <aside className="border-l border-border bg-surface px-4 py-6 flex flex-col gap-5 overflow-y-auto hidden lg:flex">

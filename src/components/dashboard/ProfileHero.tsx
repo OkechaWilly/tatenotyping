@@ -1,15 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function ProfileHero() {
+  const { profile, isLoading } = useAuth();
   const [xpProgress, setXpProgress] = useState(0);
 
   useEffect(() => {
-    // Trigger animation on mount
-    const timer = setTimeout(() => setXpProgress(81), 300);
-    return () => clearTimeout(timer);
-  }, []);
+    if (profile) {
+      // Level up threshold logic (assuming 4000 XP per level based on UI)
+      const currentLevelXp = profile.xp % 4000;
+      const progress = (currentLevelXp / 4000) * 100;
+      const timer = setTimeout(() => setXpProgress(progress), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [profile]);
+
+  if (isLoading) {
+    return (
+      <div className="h-[148px] w-full bg-surface border border-border rounded-xl animate-pulse" />
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="bg-surface border border-border rounded-xl px-8 py-7 shadow-sm text-center">
+        <div className="text-ink-3 text-sm">Sign in to view your profile and track progress</div>
+      </div>
+    );
+  }
+
+  const nextLevelXp = 4000;
+  const currentLevelXp = profile.xp % nextLevelXp;
+  const xpToNext = nextLevelXp - currentLevelXp;
 
   return (
     <div className="grid grid-cols-[1fr_auto] gap-5 items-start bg-surface border border-border rounded-xl px-8 py-7 shadow-sm relative overflow-hidden animate-fadeUp">
@@ -18,23 +42,22 @@ export default function ProfileHero() {
 
       <div className="flex items-center gap-5">
         <div className="w-16 h-16 rounded-full bg-ink text-white flex items-center justify-center font-display text-[22px] font-medium shrink-0 relative">
-          JD
+          {profile.username?.substring(0, 2).toUpperCase() || "JD"}
           <div className="absolute -inset-1 rounded-full border-2 border-accent opacity-60" />
         </div>
         
         <div className="flex flex-col gap-1">
-          <div className="font-display text-[22px] font-medium text-ink leading-[1.1]">Jordan Davies</div>
+          <div className="font-display text-[22px] font-medium text-ink leading-[1.1]">{profile.username}</div>
           <div className="flex items-center gap-2.5 font-mono text-[11px] text-ink-3">
-            <span>@jordand</span>
+            <span>@{profile.username.toLowerCase()}</span>
             <span className="text-border-strong">·</span>
-            <span>Member since Jan 2026</span>
-            <span className="text-border-strong">·</span>
-            <span>342 sessions</span>
+            <span>Member since {new Date(profile.created_at).toLocaleDateString("en-US", { month: 'short', year: 'numeric' })}</span>
           </div>
           <div className="flex gap-1.5 mt-1">
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[10px] font-medium border bg-green-light text-green border-[#2D6A4F33]">✓ Verified</div>
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[10px] font-medium border bg-gold-light text-gold border-[#B8860B33]">⭐ Top 5%</div>
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[10px] font-medium border bg-accent-light text-accent border-[#C4431A33]">🔥 7-Day Streak</div>
+            {profile.streak_current >= 7 && (
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[10px] font-medium border bg-accent-light text-accent border-[#C4431A33]">🔥 {profile.streak_current}-Day Streak</div>
+            )}
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[10px] font-medium border bg-blue-light text-blue border-[#2E5F8A33]">💼 Pro</div>
           </div>
         </div>
@@ -43,7 +66,7 @@ export default function ProfileHero() {
       <div className="flex flex-col gap-1.5 min-w-[240px]">
         <div className="flex items-end gap-2.5 mb-2">
           <div className="flex items-center gap-1.5">
-            <div className="font-display text-[28px] font-semibold text-ink leading-none">14</div>
+            <div className="font-display text-[28px] font-semibold text-ink leading-none">{profile.level}</div>
             <div>
               <div className="font-mono text-[10px] text-ink-3 tracking-[0.08em] uppercase">Level</div>
               <div className="font-mono text-[11px] text-accent font-medium">Skilled Typist</div>
@@ -53,7 +76,7 @@ export default function ProfileHero() {
         
         <div className="flex justify-between items-baseline">
           <div className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-3">XP Progress</div>
-          <div className="font-mono text-[11px] text-ink-2">3,240 / 4,000 XP</div>
+          <div className="font-mono text-[11px] text-ink-2">{currentLevelXp.toLocaleString()} / {nextLevelXp.toLocaleString()} XP</div>
         </div>
         
         <div className="h-1.5 bg-surface-2 rounded-[3px] overflow-hidden border border-border">
@@ -63,7 +86,7 @@ export default function ProfileHero() {
           />
         </div>
         
-        <div className="font-mono text-[10px] text-ink-3 mt-1">760 XP to Level 15 · Proficient Typist</div>
+        <div className="font-mono text-[10px] text-ink-3 mt-1">{xpToNext.toLocaleString()} XP to Level {profile.level + 1}</div>
       </div>
     </div>
   );

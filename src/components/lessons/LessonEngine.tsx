@@ -4,12 +4,62 @@
 import Keyboard from "./Keyboard";
 import HandsDiagram from "./HandsDiagram";
 import { useTypingEngine } from "@/hooks/useTypingEngine";
-
-const LESSON_TEXT = "ff jj f j f j ff jj";
+import { LESSONS } from "@/data/lessons";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LessonEngine() {
-  const engine = useTypingEngine(LESSON_TEXT, 0); // 0 time limit for lessons, not used
+  const { user } = useAuth();
+  const [lessonIndex, setLessonIndex] = useState(0);
+  const currentLesson = LESSONS[lessonIndex];
+  const [mounted, setMounted] = useState(false);
+  
+  const handleLessonComplete = async (stats: any) => {
+    if (!user) return;
+    
+    const { createClient } = (await import("@/lib/supabase/client"));
+    const supabase = createClient();
+    
+    // 1. Save lesson progress
+    await supabase.from("lesson_progress").upsert({
+      user_id: user.id,
+      lesson_id: currentLesson.id || `lesson-${lessonIndex}`,
+      completed: true,
+      best_wpm: stats.wpm,
+      best_accuracy: stats.accuracy,
+      completed_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,lesson_id' });
+
+    // 2. XP Reward
+    const { saveSession } = await import("@/lib/supabase/sessions");
+    await saveSession({
+      userId: user.id,
+      stats,
+      mode: "lesson",
+      duration: 0, // Lessons aren't timed in the same way
+      textUsed: currentLesson.text,
+    });
+  };
+
+  const engine = useTypingEngine(mounted ? currentLesson.text : "", 0, "Beginner", handleLessonComplete);
   const { text, typed, isActive, isFinished, startTest, resetTest, handleInput, inputRef } = engine;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      resetTest(currentLesson.text);
+    }
+  }, [lessonIndex, currentLesson.text, resetTest, mounted]);
+
+  const nextLesson = () => {
+    if (lessonIndex < LESSONS.length - 1) {
+      setLessonIndex(lessonIndex + 1);
+    }
+  };
+
 
   const targetKey = text[Math.min(typed.length, text.length - 1)];
 
@@ -17,31 +67,33 @@ export default function LessonEngine() {
     <div className="flex flex-col h-full overflow-y-auto bg-bg relative">
       <div className="flex items-center justify-between px-8 py-3.5 border-b border-border bg-surface shrink-0">
         <div className="font-mono text-[10px] tracking-[0.08em] text-ink-3 flex items-center gap-1.5">
-          Lessons / Beginner / <span className="text-ink-2 font-medium">Home Row</span>
+          Lessons / {currentLesson.category} / <span className="text-ink-2 font-medium">{currentLesson.title}</span>
         </div>
         <div className="flex gap-1">
-          <div className="w-5 h-[3px] rounded-[2px] bg-accent" />
-          <div className="w-5 h-[3px] rounded-[2px] bg-accent opacity-45" />
-          <div className="w-5 h-[3px] rounded-[2px] bg-border" />
-          <div className="w-5 h-[3px] rounded-[2px] bg-border" />
-          <div className="w-5 h-[3px] rounded-[2px] bg-border" />
-          <div className="w-5 h-[3px] rounded-[2px] bg-border" />
-          <div className="w-5 h-[3px] rounded-[2px] bg-border" />
-          <div className="w-5 h-[3px] rounded-[2px] bg-border" />
+          {LESSONS.map((_, i) => (
+            <div 
+              key={i} 
+              className={`w-4 h-[3px] rounded-[2px] transition-all ${
+                i === lessonIndex ? "bg-accent" : i < lessonIndex ? "bg-accent opacity-40" : "bg-border"
+              }`} 
+            />
+          ))}
         </div>
       </div>
 
       <div className="flex-1 flex flex-col items-center px-8 py-6 gap-4.5 overflow-y-auto w-full" onClick={() => inputRef.current?.focus()}>
         <div className="text-center">
+        <div className="text-center">
           <div className="font-mono text-[10px] tracking-[0.12em] uppercase text-ink-3 mb-1">
-            Lesson 01 · Beginner
+            Lesson {String(lessonIndex + 1).padStart(2, '0')} · {currentLesson.category}
           </div>
           <div className="font-display text-[22px] font-medium text-ink mb-1">
-            The Home Row
+            {currentLesson.title}
           </div>
           <div className="text-[13px] text-ink-3 max-w-[420px] leading-[1.5]">
-            Place your fingers on A S D F and J K L ; — every key on the keyboard is reachable from here. Never look down.
+            {currentLesson.description}
           </div>
+        </div>
         </div>
 
         <div className="flex gap-2 flex-wrap justify-center mt-2">
@@ -151,7 +203,11 @@ export default function LessonEngine() {
               <button onClick={() => resetTest()} className="flex-1 px-4.5 py-2 rounded border border-border bg-surface-2 font-body text-[13px] font-medium text-ink-2 hover:bg-surface hover:text-ink transition-colors">
                 ↺ Retry
               </button>
-              <button className="flex-1 px-4.5 py-2 rounded border border-ink bg-ink font-body text-[13px] font-medium text-white hover:bg-[#2D2A27] transition-colors">
+              <button 
+                onClick={nextLesson}
+                disabled={lessonIndex === LESSONS.length - 1}
+                className="flex-1 px-4.5 py-2 rounded border border-ink bg-ink font-body text-[13px] font-medium text-white hover:bg-[#2D2A27] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 Next Lesson →
               </button>
             </div>

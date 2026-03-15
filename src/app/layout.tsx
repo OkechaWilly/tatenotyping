@@ -25,6 +25,8 @@ export const metadata: Metadata = {
   description: "A beautifully designed typing experience focusing on performance, learning, and real-world texts.",
 };
 
+import { AuthProvider } from "@/context/AuthContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,7 +35,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playfairDisplay.variable} ${dmMono.variable} ${dmSans.variable}`}>
       <body className="font-body bg-bg text-ink min-h-screen flex flex-col antialiased">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

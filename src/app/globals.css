@@ -40,43 +40,70 @@
     --shadow-md: 0 4px 20px rgba(26,23,20,0.11), 0 0 0 1px rgba(26,23,20,0.04);
   }
 
-  /* Optional Dark Mode overrides */
-  @media (prefers-color-scheme: dark) {
-    /* To be implemented if dark mode is configured */
+  /* Dark Mode Overrides (Alternative approach) */
+  [data-theme="dark"] &:root {
+    --bg: #0A0908;
+    --surface: #121110;
+    --surface-2: #1A1817;
+    --surface-3: #22201F;
+    --border: #242220;
+    --border-strong: #363331;
+    --glass-bg: rgba(22, 21, 20, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
   }
 }
 
 [data-theme="dark"] {
-  --bg:           #131110;
-  --surface:      #1C1A18;
-  --surface-2:    #232120;
-  --surface-3:    #2A2826;
-  --border:       #2E2C2A;
-  --border-strong:#3A3835;
-  --ink:          #F0EDE7;
-  --ink-2:        #C8C2B8;
-  --ink-3:        #8A827A;
-  --ink-4:        #5A5450;
-  --accent:       #E05520;
+  --bg:           #0A0908;
+  --surface:      #121110;
+  --surface-2:    #1A1817;
+  --surface-3:    #22201F;
+  --border:       #1E1C1B;
+  --border-strong:#2D2A28;
+  --ink:          #E6E2DE;
+  --ink-2:        #B8B0A8;
+  --ink-3:        #7A746F;
+  --ink-4:        #4A4541;
+  --accent:       #EB5E28;
   --accent-light: #2A1A14;
-  --gold-light:   #1E1A0E;
+  --gold-light:   #1A180E;
   --green-light:  #0E1A14;
   --blue-light:   #0E1620;
-  --cursor-color: #F0EDE7;
+  --cursor-color: #EB5E28;
+  --pending:      #363330;
+  --glass-bg:     rgba(18, 17, 16, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.08);
 }
 
 @layer base {
   body {
-    @apply bg-bg text-ink min-h-screen text-[14px] leading-relaxed;
+    @apply bg-bg text-ink min-h-screen text-[14px] leading-relaxed transition-colors duration-300;
   }
 }
 
 @layer utilities {
+  .glass {
+    @apply backdrop-blur-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] shadow-md;
+  }
+  .glass-card {
+    @apply glass rounded-xl transition-all duration-300 hover:shadow-lg hover:border-[rgba(255,255,255,0.12)];
+  }
   .animate-pulse-key {
     animation: pulse-key 0.65s ease infinite alternate;
   }
   @keyframes pulse-key {
     from { filter: brightness(1); }
     to { filter: brightness(1.14); box-shadow: 0 3px 0 #943212, 0 0 10px rgba(196,67,26,0.28); }
+  }
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-ink to-ink-3;
+  }
+  [data-theme="dark"] .text-gradient {
+    @apply from-white to-ink-3;
   }
 }

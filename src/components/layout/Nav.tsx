@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Nav() {
   const pathname = usePathname();
@@ -16,12 +16,14 @@ export default function Nav() {
     { name: "Compete", href: "/compete" },
   ];
 
+  const { user, signOut, isLoading } = useAuth();
   const [theme, setTheme] = useState("light");
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [user, setUser] = useState<any>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("tateno-theme") || "light";
@@ -30,17 +32,13 @@ export default function Nav() {
   }, []);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    if (user) {
+      setShowAuth(false);
+      setEmail("");
+      setPassword("");
+      setAuthError(null);
+    }
+  }, [user]);
 
   const toggleTheme = () => {
     const next = theme === "light" ? "dark" : "light";
@@ -51,24 +49,38 @@ export default function Nav() {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    const supabase = createClient();
-    if (authMode === "signin") {
-      await supabase.auth.signInWithPassword({ email, password });
-    } else {
-      await supabase.auth.signUp({ email, password });
+    setAuthError(null);
+    setIsSubmitting(true);
+    
+    const supabase = (await import("@/lib/supabase/client")).createClient();
+    
+    try {
+      if (authMode === "signin") {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: {
+              username: email.split("@")[0], // Default username
+            }
+          }
+        });
+        if (error) throw error;
+      }
+    } catch (err: any) {
+      setAuthError(err.message || "An authentication error occurred");
+    } finally {
+      setIsSubmitting(false);
     }
-    setShowAuth(false);
   };
 
   const handleGoogleAuth = async () => {
-    const supabase = createClient();
+    const supabase = (await import("@/lib/supabase/client")).createClient();
     await supabase.auth.signInWithOAuth({ provider: "google" });
   };
-
-  const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-  }
 
   return (
     <nav className="flex items-center justify-between px-8 h-14 bg-surface border-b border-border sticky top-0 z-40 relative">
@@ -118,8 +130,8 @@ export default function Nav() {
               🔥 <span>7</span> day streak
             </div>
             <div 
-              className="w-[30px] h-[30px] rounded-full bg-ink text-white flex items-center justify-center text-[11px] font-semibold font-mono cursor-pointer"
-              onClick={handleSignOut}
+              className="w-[30px] h-[30px] rounded-full bg-ink text-white flex items-center justify-center text-[11px] font-semibold font-mono cursor-pointer transition-transform hover:scale-105"
+              onClick={signOut}
               title="Sign Out"
             >
               {user.email?.substring(0,2).toUpperCase()}
@@ -128,9 +140,10 @@ export default function Nav() {
         ) : (
           <button 
             onClick={() => setShowAuth(!showAuth)}
-            className="text-[13px] font-medium text-ink bg-surface-2 px-3 py-1.5 rounded hover:bg-surface-3 transition-colors"
+            disabled={isLoading}
+            className="text-[13px] font-medium text-ink bg-surface-2 px-3 py-1.5 rounded hover:bg-surface-3 transition-colors disabled:opacity-50"
           >
-            Sign In
+            {isLoading ? "..." : "Sign In"}
           </button>
         )}
 
@@ -145,7 +158,7 @@ export default function Nav() {
                 placeholder="Email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 bg-surface-2 border border-border rounded text-[13px] text-ink outline-none focus:border-ink"
+                className="w-full px-3 py-2 bg-surface-2 border border-border rounded text-[13px] text-ink outline-none focus:border-ink transition-colors"
                 required
               />
               <input 
@@ -153,11 +166,20 @@ export default function Nav() {
                 placeholder="Password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 bg-surface-2 border border-border rounded text-[13px] text-ink outline-none focus:border-ink"
+                className="w-full px-3 py-2 bg-surface-2 border border-border rounded text-[13px] text-ink outline-none focus:border-ink transition-colors"
                 required
               />
-              <button type="submit" className="w-full bg-ink text-white font-medium text-[13px] py-2 rounded hover:bg-[#2D2A27]">
-                {authMode === "signin" ? "Sign In" : "Sign Up"}
+              {authError && (
+                <div className="text-[11px] text-error bg-error-light px-2 py-1.5 rounded border border-error/20">
+                  {authError}
+                </div>
+              )}
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full bg-ink text-white font-medium text-[13px] py-2 rounded hover:bg-[#2D2A27] transition-colors disabled:opacity-50"
+              >
+                {isSubmitting ? "Processing..." : (authMode === "signin" ? "Sign In" : "Sign Up")}
               </button>
             </form>
             <div className="flex items-center gap-3 my-4">

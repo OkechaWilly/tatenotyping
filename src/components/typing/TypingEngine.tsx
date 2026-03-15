@@ -1,14 +1,36 @@
-"use client";
-
+import { useEffect } from "react";
 import { useTypingEngine } from "@/hooks/useTypingEngine";
 
 interface TypingEngineProps {
   engine: ReturnType<typeof useTypingEngine>;
+  mode: string;
 }
 
-export default function TypingEngine({ engine }: TypingEngineProps) {
-  const { text, typed, isActive, isFinished, stats, inputRef, handleInput, startTest, resetTest, focusInput } = engine;
-  const mode = "Words"; // Will be dynamic later
+export default function TypingEngine({ engine, mode }: TypingEngineProps) {
+  const { text, typed, isActive, isFinished, stats, inputRef, handleInput, startTest, resetTest, focusInput, difficulty } = engine;
+    // Keyboard shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Tab") {
+                e.preventDefault();
+                resetTest(text);
+            }
+            if (e.key === "Enter" && isFinished) {
+                resetTest();
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isFinished, resetTest, text]);
+
+    const toggleTheme = () => {
+        const current = document.documentElement.getAttribute("data-theme") || "light";
+        const next = current === "light" ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem("tateno-theme", next);
+        // Dispatch event for other components (like Nav) to sync if needed
+        window.dispatchEvent(new Event("storage"));
+    };
 
   return (
     <div className="flex flex-col h-full bg-bg relative">
@@ -23,23 +45,23 @@ export default function TypingEngine({ engine }: TypingEngineProps) {
       <div className="flex-1 flex flex-col items-center justify-center px-12 py-8 relative overflow-hidden" onClick={focusInput}>
         {/* Meta */}
         <div className="flex items-center gap-3 mb-6 self-start max-w-[760px] w-full mx-auto">
-          <div className="font-mono text-[10px] tracking-[0.08em] uppercase text-ink-3">Common Words · Intermediate</div>
-          <div className="font-mono text-[10px] px-2 py-0.5 rounded-[2px] border border-border text-ink-3">en-US</div>
-          <div className="font-mono text-[10px] px-2 py-0.5 rounded-[2px] border border-border text-ink-3">{mode}</div>
+          <div className="font-mono text-[10px] tracking-[0.08em] uppercase text-ink-3">en-US · Performance</div>
+          <div className="font-mono text-[10px] px-2 py-0.5 rounded-[2px] border border-border text-ink-3 shrink-0 capitalize">{difficulty}</div>
+          <div className="font-mono text-[10px] px-2 py-0.5 rounded-[2px] border border-border text-ink-3 shrink-0 uppercase">{mode}</div>
         </div>
 
         {/* Display */}
-        <div className={`relative max-w-[760px] w-full bg-surface border border-border rounded-lg px-9 py-8 shadow mx-auto transition-all ${isActive ? 'before:opacity-100' : 'before:opacity-0'}`}>
+        <div className={`relative max-w-[760px] w-full bg-surface border border-border rounded-lg px-9 py-8 shadow-sm mx-auto transition-all ${isActive ? 'ring-1 ring-accent/20 border-accent/30' : ''}`}>
           <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-accent rounded-l-lg opacity-0 transition-opacity duration-300 before-marker" style={{ opacity: isActive ? 1 : 0 }} />
           
-          <div className="font-mono text-[18px] leading-[1.8] tracking-[0.02em] text-pending break-words select-none">
+          <div className="font-mono text-[20px] leading-[1.7] tracking-[0.01em] text-pending break-words select-none text-left">
             {text.split('').map((char, i) => {
               let charClass = "relative transition-colors duration-75 ";
               if (i < typed.length) {
-                charClass += typed[i] === char ? "text-ink " : "text-error bg-[#C4431A14] rounded-[2px] ";
+                charClass += typed[i] === char ? "text-ink " : "text-error bg-error/10 rounded-[1px] ";
               }
               if (i === typed.length && isActive) {
-                charClass += "text-ink after:content-[''] after:absolute after:left-0 after:top-[2px] after:bottom-[2px] after:w-[2px] after:bg-cursor-color after:rounded-[1px] after:animate-blink";
+                charClass += "text-ink after:content-[''] after:absolute after:left-0 after:top-[2px] after:bottom-[2px] after:w-[2px] after:bg-accent after:rounded-[1px] after:animate-blink";
               }
               
               return (
@@ -78,27 +100,29 @@ export default function TypingEngine({ engine }: TypingEngineProps) {
       <div className="flex items-center justify-center gap-3 px-8 py-4 border-t border-border bg-surface shrink-0">
         <button 
           onClick={() => resetTest(text)} 
-          className="flex items-center gap-1.5 px-4.5 py-2 rounded border border-border bg-surface-2 font-body text-[13px] font-medium text-ink-2 cursor-pointer transition-all duration-150 hover:border-border-strong hover:bg-surface hover:text-ink">
-          ↺ Restart <kbd className="bg-surface-2 border border-border-strong rounded-[3px] px-1.5 py-[1px] font-mono text-[11px] text-ink ml-1">Tab</kbd>
+          className="flex items-center gap-1.5 px-4 y-1.5 rounded border border-border bg-surface-2 font-body text-[12px] font-medium text-ink-2 cursor-pointer transition-all duration-150 hover:border-border-strong hover:bg-surface hover:text-ink">
+          ↺ Restart <kbd className="bg-surface-3 rounded-[2px] px-1 py-[0.5px] font-mono text-[10px] text-ink-3 ml-1">Tab</kbd>
         </button>
         <button 
           onClick={() => resetTest()} 
-          className="flex items-center gap-1.5 px-4.5 py-2 rounded border border-ink bg-ink font-body text-[13px] font-medium text-white cursor-pointer transition-all duration-150 hover:bg-[#2D2A27]">
-          New Test <kbd className="bg-surface-2 border border-border-strong rounded-[3px] px-1.5 py-[1px] font-mono text-[11px] text-ink ml-1 opacity-80 text-ink-2">↵</kbd>
+          className="flex items-center gap-1.5 px-4 y-1.5 rounded border border-ink bg-ink font-body text-[12px] font-medium text-white cursor-pointer transition-all duration-150 hover:bg-[#2D2A27]">
+          New Test <kbd className="bg-white/20 rounded-[2px] px-1 py-[0.5px] font-mono text-[10px] text-white ml-1">↵</kbd>
         </button>
-        <button className="flex items-center gap-1.5 px-4.5 py-2 rounded border border-border bg-surface-2 font-body text-[13px] font-medium text-ink-2 cursor-pointer transition-all duration-150 hover:border-border-strong hover:bg-surface hover:text-ink">
+        <button 
+            onClick={toggleTheme}
+            className="flex items-center gap-1.5 px-4 y-1.5 rounded border border-border bg-surface-2 font-body text-[12px] font-medium text-ink-2 cursor-pointer transition-all duration-150 hover:border-border-strong hover:bg-surface hover:text-ink">
           ⊕ Theme
         </button>
       </div>
 
-      {/* Results Overlay (Simplified for now) */}
+      {/* Results Overlay */}
       {isFinished && (
-        <div className="absolute inset-0 z-50 bg-ink/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="absolute inset-0 z-50 bg-bg/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-surface border border-border rounded-xl px-12 py-10 max-w-[540px] w-full shadow-md animate-slideUp">
             <div className="flex items-baseline justify-between mb-8 border-b border-border pb-5">
               <h2 className="font-display text-[22px] font-medium">Session Complete</h2>
-              <div className="font-mono text-[11px] px-3 py-1 rounded-full bg-accent-light text-accent border border-[#C4431A33]">
-                +12 XP
+              <div className="font-mono text-[11px] px-3 py-1 rounded-full bg-accent-light text-accent border border-accent/20">
+                Performance Verified
               </div>
             </div>
 

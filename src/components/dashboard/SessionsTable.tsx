@@ -1,13 +1,48 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/lib/supabase/client";
+
 export default function SessionsTable() {
-  const sessions = [
-    { wpm: 84, raw: 91, acc: 98, mode: "Words", dur: "60s", time: "2m ago", pb: true },
-    { wpm: 78, raw: 84, acc: 95, mode: "Code", dur: "30s", time: "34m ago", pb: false },
-    { wpm: 76, raw: 82, acc: 97, mode: "Quotes", dur: "60s", time: "1h ago", pb: false },
-    { wpm: 81, raw: 87, acc: 96, mode: "Words", dur: "2m", time: "2h ago", pb: false },
-    { wpm: 74, raw: 80, acc: 94, mode: "Prose", dur: "60s", time: "Yesterday", pb: false },
-    { wpm: 79, raw: 85, acc: 98, mode: "Words", dur: "30s", time: "Yesterday", pb: false },
-    { wpm: 72, raw: 78, acc: 95, mode: "Code", dur: "60s", time: "2d ago", pb: false },
-  ];
+  const { user } = useAuth();
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchSessions = async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("sessions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true }); // We'll reverse for display
+
+      if (data) {
+        setSessions([...data].reverse().slice(0, 10)); // Last 10
+      }
+      setLoading(false);
+    };
+
+    fetchSessions();
+  }, [user]);
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const mins = Math.floor(diff / 60000);
+    const hrs = Math.floor(mins / 60);
+    const days = Math.floor(hrs / 24);
+
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    if (hrs < 24) return `${hrs}h ago`;
+    if (days === 1) return "Yesterday";
+    return `${days}d ago`;
+  };
 
   return (
     <div className="bg-surface border border-border rounded-[10px] py-[22px] shadow-sm flex flex-col h-full">
@@ -29,34 +64,35 @@ export default function SessionsTable() {
             </tr>
           </thead>
           <tbody>
-            {sessions.map((s, i) => (
-              <tr key={i} className="hover:bg-surface-2 transition-colors">
-                <td className="py-2.5 px-3 border-b border-border font-mono text-[15px] font-medium text-ink flex items-center gap-2">
-                  {s.wpm}
-                  {s.pb && (
-                    <span className="inline-flex items-center font-mono text-[9px] text-gold bg-gold-light border border-[#B8860B33] px-1.5 py-px rounded-full">
-                      PB
-                    </span>
-                  )}
-                </td>
-                <td className="py-2.5 px-3 border-b border-border font-mono text-[12px] text-ink-2">{s.raw}</td>
-                <td className="py-2.5 px-3 border-b border-border font-mono text-[12px] text-ink-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1 bg-surface-2 rounded-full overflow-hidden border border-border min-w-[60px]">
-                      <div className="h-full bg-green" style={{ width: `${s.acc}%` }} />
+            {loading ? (
+              <tr><td colSpan={6} className="py-8 text-center font-mono text-[10px] text-ink-3">Loading sessions...</td></tr>
+            ) : sessions.length === 0 ? (
+              <tr><td colSpan={6} className="py-8 text-center font-mono text-[10px] text-ink-3">No sessions found</td></tr>
+            ) : (
+              sessions.map((s, i) => (
+                <tr key={i} className="hover:bg-surface-2 transition-colors">
+                  <td className="py-2.5 px-3 border-b border-border font-mono text-[15px] font-medium text-ink flex items-center gap-2">
+                    {s.wpm}
+                  </td>
+                  <td className="py-2.5 px-3 border-b border-border font-mono text-[12px] text-ink-2">{s.raw_wpm}</td>
+                  <td className="py-2.5 px-3 border-b border-border font-mono text-[12px] text-ink-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1 bg-surface-2 rounded-full overflow-hidden border border-border min-w-[60px]">
+                        <div className="h-full bg-green" style={{ width: `${s.accuracy}%` }} />
+                      </div>
+                      <span>{s.accuracy}%</span>
                     </div>
-                    <span>{s.acc}%</span>
-                  </div>
-                </td>
-                <td className="py-2.5 px-3 border-b border-border">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full font-mono text-[10px] border border-border bg-surface-2 text-ink-3">
-                    {s.mode}
-                  </span>
-                </td>
-                <td className="py-2.5 px-3 border-b border-border font-mono text-[12px] text-ink-2">{s.dur}</td>
-                <td className="py-2.5 px-3 border-b border-border font-mono text-[12px] text-ink-2">{s.time}</td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="py-2.5 px-3 border-b border-border">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full font-mono text-[10px] border border-border bg-surface-2 text-ink-3 whitespace-nowrap">
+                      {s.mode.charAt(0).toUpperCase() + s.mode.slice(1)}
+                    </span>
+                  </td>
+                  <td className="py-2.5 px-3 border-b border-border font-mono text-[12px] text-ink-2">{s.duration}s</td>
+                  <td className="py-2.5 px-3 border-b border-border font-mono text-[12px] text-ink-2 whitespace-nowrap">{formatTime(s.created_at)}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

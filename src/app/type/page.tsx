@@ -3,17 +3,20 @@ import Sidebar from "@/components/layout/Sidebar";
 import RightPanel from "@/components/layout/RightPanel";
 import TypingContainer from "@/components/typing/TypingContainer";
 import { TypingProvider } from "@/context/TypingContext";
+import { Suspense } from "react";
 
 export default function TypePage() {
   return (
     <AppLayout>
-      <TypingProvider>
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_200px] flex-1 overflow-hidden h-full">
-          <Sidebar />
-          <TypingContainer />
-          <RightPanel />
-        </div>
-      </TypingProvider>
+      <Suspense fallback={<div>Loading...</div>}>
+        <TypingProvider>
+          <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_200px] flex-1 overflow-hidden h-full">
+            <Sidebar />
+            <TypingContainer />
+            <RightPanel />
+          </div>
+        </TypingProvider>
+      </Suspense>
     </AppLayout>
   );
 }
