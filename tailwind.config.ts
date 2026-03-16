@@ -41,7 +41,6 @@ const config: Config = {
         "f-thumb": "var(--f-thumb)",
       },
       fontFamily: {
-        display: ["var(--font-display)"],
         mono: ["var(--font-mono)"],
         body: ["var(--font-body)"],
       },

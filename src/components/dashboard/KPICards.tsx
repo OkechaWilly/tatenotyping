@@ -21,7 +21,7 @@ export default function KPICards() {
       const supabase = createClient();
       
       // Fetch all sessions (simplified, for production use aggregation/RPC)
-      const { data: sessions, error } = await supabase
+      const { data: sessions } = await supabase
         .from("sessions")
         .select("wpm, accuracy, duration")
         .eq("user_id", user.id);
@@ -94,7 +94,7 @@ export default function KPICards() {
   ];
 
   return (
-    <div className="grid grid-cols-5 gap-3 animate-fadeUp" style={{ animationDelay: "0.08s" }}>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 animate-fadeUp" style={{ animationDelay: "0.08s" }}>
       {kpis.map((kpi, i) => (
         <div
           key={i}
@@ -107,9 +107,9 @@ export default function KPICards() {
           <div className="font-mono text-[9px] font-medium tracking-[0.12em] uppercase text-ink-3">
             {kpi.label}
           </div>
-          <div className="font-mono text-[30px] font-normal text-ink leading-none tracking-[-0.02em]">
+          <div className="font-mono text-[24px] sm:text-[30px] font-normal text-ink leading-none tracking-[-0.02em]">
             {kpi.value}
-            {kpi.sub && <sub className="text-[14px] opacity-60 font-normal align-baseline ml-[2px]">{kpi.sub}</sub>}
+            {kpi.sub && <sub className="text-[12px] sm:text-[14px] opacity-60 font-normal align-baseline ml-[2px]">{kpi.sub}</sub>}
           </div>
           <div className={`font-mono text-[10px] ${kpi.deltaColor}`}>
             {kpi.delta}

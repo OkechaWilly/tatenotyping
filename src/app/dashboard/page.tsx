@@ -13,7 +13,7 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <div className="flex-1 overflow-y-auto bg-bg">
-        <div className="max-w-[1200px] mx-auto px-8 pb-16 pt-8 flex flex-col gap-7">
+        <div className="layout-container pb-16 pt-8 flex flex-col gap-7">
           <ProfileHero />
           <KPICards />
           

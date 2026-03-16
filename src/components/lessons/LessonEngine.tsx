@@ -1,11 +1,10 @@
 "use client";
 
-
 import Keyboard from "./Keyboard";
-import HandsDiagram from "./HandsDiagram";
+import LetterMasteryGraph from "./LetterMasteryGraph";
 import { useTypingEngine } from "@/hooks/useTypingEngine";
 import { LESSONS } from "@/data/lessons";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 export default function LessonEngine() {
@@ -13,36 +12,42 @@ export default function LessonEngine() {
   const [lessonIndex, setLessonIndex] = useState(0);
   const currentLesson = LESSONS[lessonIndex];
   const [mounted, setMounted] = useState(false);
+  const [passed, setPassed] = useState(false);
+  const [drillMode, setDrillMode] = useState(false);
+  const [drillText, setDrillText] = useState("");
   
-  const handleLessonComplete = async (stats: any) => {
+  const handleLessonComplete = useCallback(async (stats: { wpm: number; accuracy: number; errors: number; rawWpm: number }) => {
+    const isSuccess = stats.accuracy >= 90;
+    setPassed(isSuccess);
+
     if (!user) return;
     
     const { createClient } = (await import("@/lib/supabase/client"));
     const supabase = createClient();
     
-    // 1. Save lesson progress
+    // Save lesson progress
     await supabase.from("lesson_progress").upsert({
       user_id: user.id,
       lesson_id: currentLesson.id || `lesson-${lessonIndex}`,
-      completed: true,
+      completed: isSuccess,
       best_wpm: stats.wpm,
       best_accuracy: stats.accuracy,
       completed_at: new Date().toISOString(),
     }, { onConflict: 'user_id,lesson_id' });
 
-    // 2. XP Reward
+    // Save session
     const { saveSession } = await import("@/lib/supabase/sessions");
     await saveSession({
       userId: user.id,
       stats,
       mode: "lesson",
-      duration: 0, // Lessons aren't timed in the same way
-      textUsed: currentLesson.text,
+      duration: 0,
+      textUsed: drillMode ? drillText : currentLesson.text,
     });
-  };
+  }, [user, currentLesson, lessonIndex, drillMode, drillText]);
 
-  const engine = useTypingEngine(mounted ? currentLesson.text : "", 0, "Beginner", handleLessonComplete);
-  const { text, typed, isActive, isFinished, startTest, resetTest, handleInput, inputRef } = engine;
+  const engine = useTypingEngine(mounted ? (drillMode ? drillText : currentLesson.text) : "", 0, "Beginner", handleLessonComplete);
+  const { text, typed, isActive, isFinished, startTest, resetTest, handleInput, inputRef, keyStats } = engine;
 
   useEffect(() => {
     setMounted(true);
@@ -50,30 +55,54 @@ export default function LessonEngine() {
 
   useEffect(() => {
     if (mounted) {
+      setDrillMode(false);
+      setDrillText("");
       resetTest(currentLesson.text);
     }
   }, [lessonIndex, currentLesson.text, resetTest, mounted]);
 
-  const nextLesson = () => {
-    if (lessonIndex < LESSONS.length - 1) {
-      setLessonIndex(lessonIndex + 1);
+  const generateDrill = () => {
+    const weakKeys = Object.entries(keyStats)
+      .filter(([, stats]) => (stats.attempts - stats.errors) / stats.attempts < 0.9)
+      .map(([key]) => key);
+    
+    if (weakKeys.length === 0) {
+      resetTest(currentLesson.text);
+      return;
     }
+
+    // Generate remediation drill: repeat weak keys in groups
+    let drill = "";
+    for (let i = 0; i < 15; i++) {
+        const key = weakKeys[Math.floor(Math.random() * weakKeys.length)];
+        drill += `${key}${key}${key} `;
+    }
+    const finalDrill = drill.trim();
+    setDrillText(finalDrill);
+    setDrillMode(true);
+    resetTest(finalDrill);
   };
 
+  const nextLesson = () => {
+    if (lessonIndex < LESSONS.length - 1 && passed) {
+      setLessonIndex(lessonIndex + 1);
+      setPassed(false);
+    }
+  };
 
   const targetKey = text[Math.min(typed.length, text.length - 1)];
 
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-bg relative">
-      <div className="flex items-center justify-between px-8 py-3.5 border-b border-border bg-surface shrink-0">
-        <div className="font-mono text-[10px] tracking-[0.08em] text-ink-3 flex items-center gap-1.5">
-          Lessons / {currentLesson.category} / <span className="text-ink-2 font-medium">{currentLesson.title}</span>
+      <div className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-3.5 border-b border-border bg-surface shrink-0">
+        <div className="font-mono text-[9px] sm:text-[10px] tracking-[0.08em] text-ink-3 flex items-center gap-1.5 truncate mr-2">
+          Lessons / {currentLesson.category} / <span className="text-ink-2 font-medium truncate">{currentLesson.title}</span>
         </div>
-        <div className="flex gap-1">
-          {LESSONS.map((_, i) => (
+        <div className="flex gap-1 shrink-0">
+          {LESSONS.map((lesson, i) => (
             <div 
               key={i} 
-              className={`w-4 h-[3px] rounded-[2px] transition-all ${
+              className={`w-2.5 sm:w-4 h-[3px] rounded-[2px] transition-all ${
                 i === lessonIndex ? "bg-accent" : i < lessonIndex ? "bg-accent opacity-40" : "bg-border"
               }`} 
             />
@@ -81,50 +110,35 @@ export default function LessonEngine() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center px-8 py-6 gap-4.5 overflow-y-auto w-full" onClick={() => inputRef.current?.focus()}>
-        <div className="text-center">
-        <div className="text-center">
-          <div className="font-mono text-[10px] tracking-[0.12em] uppercase text-ink-3 mb-1">
+      <div className="flex-1 flex flex-col items-center px-4 sm:px-8 py-6 sm:py-8 gap-6 overflow-y-auto w-full" onClick={() => inputRef.current?.focus()}>
+        <div className="text-center w-full">
+          <div className="font-mono text-[9px] sm:text-[10px] tracking-[0.12em] uppercase text-ink-3 mb-1">
             Lesson {String(lessonIndex + 1).padStart(2, '0')} · {currentLesson.category}
           </div>
-          <div className="font-display text-[22px] font-medium text-ink mb-1">
-            {currentLesson.title}
+          <div className="font-display text-[20px] sm:text-[22px] font-medium text-ink mb-1">
+            {drillMode ? "Remediation Drill" : currentLesson.title}
           </div>
-          <div className="text-[13px] text-ink-3 max-w-[420px] leading-[1.5]">
-            {currentLesson.description}
+          <div className="text-[12px] sm:text-[13px] text-ink-3 max-w-[420px] leading-[1.5] mx-auto">
+            {drillMode 
+              ? "Focus on the characters below. Accuracy is key to proceeding."
+              : currentLesson.description}
           </div>
-        </div>
         </div>
 
-        <div className="flex gap-2 flex-wrap justify-center mt-2">
-          {["Pinky", "Ring", "Middle", "Index", "Thumb"].map((f) => (
-            <div key={f} className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-border bg-surface font-mono text-[11px] text-ink-2">
-              <div 
-                className="w-2 h-2 rounded-full" 
-                style={{ 
-                  backgroundColor: 
-                    f === "Pinky" ? "var(--f-pinky)" : 
-                    f === "Ring" ? "var(--f-ring)" : 
-                    f === "Middle" ? "var(--f-middle)" : 
-                    f === "Index" ? "var(--f-index)" : 
-                    "var(--f-thumb)" 
-                }} 
-              />
-              {f}
-            </div>
-          ))}
+        <div className="w-full max-w-[680px]">
+           <LetterMasteryGraph keyStats={keyStats} />
         </div>
 
-        <div className="bg-surface border border-border rounded-lg px-8 py-6 w-full max-w-[680px] shadow-sm relative cursor-text group">
-          <div className={`absolute left-0 top-0 bottom-0 w-[3px] bg-accent rounded-l-lg transition-opacity ${isActive ? 'opacity-100' : 'opacity-0'}`} />
+        <div className="bg-surface border border-border rounded-lg px-6 sm:px-8 py-8 sm:py-10 w-full max-w-[680px] shadow-sm relative cursor-text group">
+          <div className={`absolute left-0 top-0 bottom-0 w-[4px] bg-accent rounded-l-lg transition-opacity ${isActive ? 'opacity-100' : 'opacity-0'}`} />
           
-          <div className="font-mono text-[18px] leading-[1.9] tracking-[0.04em] text-pending select-none break-words text-center">
+          <div className="font-mono text-[18px] sm:text-[22px] leading-[1.8] sm:leading-[2] tracking-[0.04em] sm:tracking-[0.06em] text-pending select-none break-words text-center">
             {text.split('').map((char, i) => {
-              let charClass = "relative transition-colors duration-75 ";
+              let charClass = "relative transition-all duration-75 ";
               if (i < typed.length) {
-                charClass += typed[i] === char ? "text-ink " : "text-error bg-[#C4431A14] rounded-[2px] ";
+                charClass += typed[i] === char ? "text-ink " : "text-error bg-error/10 rounded-[2px] ";
               }
-              if (i === typed.length && isActive) charClass += "text-ink after:content-[''] after:absolute after:left-0 after:top-[2px] after:bottom-[2px] after:w-[2px] after:bg-cursor-color after:rounded-[1px] after:animate-blink";
+              if (i === typed.length && isActive) charClass += "text-ink border-b-2 border-accent animate-pulse";
               
               return (
                 <span key={i} className={charClass}>
@@ -148,68 +162,82 @@ export default function LessonEngine() {
               className="absolute inset-0 flex items-center justify-center rounded-lg cursor-text transition-all duration-200 group bg-surface/40 backdrop-blur-[1px]"
               onClick={startTest}
             >
-              <div className="flex items-center gap-2 bg-surface border border-border px-5 py-2.5 rounded-full text-[13px] text-ink-2 shadow-md transition-all duration-200 pointer-events-none group-hover:-translate-y-1">
-                Click or press any key to begin 
-                <kbd className="bg-surface-2 border border-border-strong rounded-[3px] px-1.5 py-[1px] font-mono text-[11px] text-ink shadow-[0_2px_0_var(--border-strong)]">↵</kbd>
+              <div className="flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-full text-[13px] font-bold shadow-xl transition-all duration-200 pointer-events-none group-hover:-translate-y-1">
+                Start {drillMode ? "Mastery Drill" : "Lesson"}
+                <kbd className="bg-white/20 rounded-[3px] px-1.5 py-[1px] font-mono text-[11px] ml-2 font-medium">Enter</kbd>
               </div>
             </div>
           )}
         </div>
 
-        <div className="w-full max-w-[620px]">
+        <div className="hidden sm:block w-full max-w-[620px] opacity-80 hover:opacity-100 transition-opacity">
           <Keyboard activeKey={!isFinished ? targetKey : ""} />
-          <div className="mt-4">
-            <HandsDiagram activeKey={!isFinished ? targetKey : ""} />
-          </div>
         </div>
 
-        <div className="flex items-center gap-3.5 bg-surface border border-border rounded-lg px-4.5 py-3 w-full max-w-[620px] shadow-sm">
-          <div className="w-8 h-8 rounded-md bg-accent-light flex items-center justify-center text-[15px] shrink-0">👋</div>
-          <div className="flex-1">
-            <div className="text-[13px] font-medium text-ink">Place your fingers on the home row</div>
-            <div className="text-[11px] text-ink-3">Left: A S D F &nbsp;·&nbsp; Right: J K L ;</div>
+        <div className="flex items-center gap-3 sm:gap-4 bg-surface-2/50 backdrop-blur-sm border border-border rounded-xl px-4 sm:px-5 py-3 sm:py-4 w-full max-w-[620px] shadow-sm mb-4">
+          <div className="w-10 h-10 rounded-xl bg-accent/5 flex items-center justify-center text-accent shrink-0 border border-accent/10">
+             <span className="font-mono text-base sm:text-lg font-bold">
+               {targetKey === " " ? "␣" : targetKey?.toUpperCase() || "—"}
+             </span>
           </div>
-          <div className="font-mono text-[13px] font-medium text-ink-2 bg-surface-2 border border-border-strong rounded px-2.5 py-1 shadow-[0_2px_0_var(--border-strong)] min-w-[32px] text-center">
-            {targetKey === " " ? "SPC" : targetKey?.toUpperCase() || "—"}
+          <div className="flex-1">
+            <div className="text-[12px] sm:text-[13px] font-semibold text-ink">Focus Area</div>
+            <div className="text-[10px] sm:text-[11px] text-ink-3">Maintain posture and focus on accuracy.</div>
           </div>
         </div>
       </div>
 
       {isFinished && (
-        <div className="absolute inset-0 z-50 bg-ink/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-xl p-8 max-w-[480px] w-full shadow-md animate-slideUp text-center flex flex-col items-center gap-2.5">
-            <div className="font-mono text-[11px] font-medium text-gold bg-gold-light border border-[#B8860B40] px-3.5 py-1 rounded-full">
-              +25 XP
+        <div className="absolute inset-0 z-50 bg-bg/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-surface border border-border rounded-2xl p-6 sm:p-10 max-w-[520px] w-full shadow-2xl animate-fadeUp text-center flex flex-col items-center gap-4">
+            <div className={`px-4 py-1.5 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-widest border ${
+              passed ? "bg-green/10 text-green border-green/20" : "bg-error/10 text-error border-error/20"
+            }`}>
+              {passed ? "Mastered" : "Needs Practice"}
             </div>
-            <h2 className="font-display text-[20px] font-medium mt-1">Lesson Complete 🎉</h2>
-            <div className="text-[13px] text-ink-3 mb-2">You&apos;ve mastered the home row. Your fingers know where to rest.</div>
             
-            <div className="flex justify-center gap-7 mb-4">
-              <div className="flex flex-col items-center gap-1">
-                <div className="font-mono text-[26px] text-ink tracking-tight">{engine.stats.wpm}</div>
-                <div className="font-mono text-[9px] tracking-[0.1em] text-ink-3 uppercase">WPM</div>
+            <h2 className="font-display text-[24px] sm:text-3xl font-bold text-ink">
+              {passed ? "Excellent Progress!" : "Keep Working"}
+            </h2>
+            
+            <div className="text-[13px] sm:text-[14px] text-ink-3 leading-relaxed">
+              {passed 
+                ? "You've successfully cleared the accuracy threshold. Ready for the next challenge."
+                : "You didn't reach the 90% accuracy requirement. We've prepared a remediation drill based on your weak keys."}
+            </div>
+            
+            <div className="flex justify-center gap-6 sm:gap-10 w-full py-6 border-y border-border/50">
+              <div className="flex flex-col items-center">
+                <div className="font-mono text-[24px] sm:text-3xl font-bold text-ink">{engine.stats.wpm}</div>
+                <div className="text-[9px] sm:text-[10px] uppercase tracking-widest text-ink-4">WPM</div>
               </div>
-              <div className="flex flex-col items-center gap-1">
-                <div className="font-mono text-[26px] text-ink tracking-tight">{engine.stats.accuracy}%</div>
-                <div className="font-mono text-[9px] tracking-[0.1em] text-ink-3 uppercase">Acc</div>
+              <div className="flex flex-col items-center">
+                <div className={`font-mono text-[24px] sm:text-3xl font-bold ${engine.stats.accuracy < 90 ? "text-error" : "text-green"}`}>
+                  {engine.stats.accuracy}%
+                </div>
+                <div className="text-[9px] sm:text-[10px] uppercase tracking-widest text-ink-4">Accuracy</div>
               </div>
-              <div className="flex flex-col items-center gap-1">
-                <div className="font-mono text-[26px] text-ink tracking-tight">{engine.stats.errors}</div>
-                <div className="font-mono text-[9px] tracking-[0.1em] text-ink-3 uppercase">Errors</div>
+              <div className="flex flex-col items-center">
+                <div className="font-mono text-[24px] sm:text-3xl font-bold text-ink">{engine.stats.errors}</div>
+                <div className="text-[9px] sm:text-[10px] uppercase tracking-widest text-ink-4">Errors</div>
               </div>
             </div>
 
-            <div className="flex gap-2.5 w-full">
-              <button onClick={() => resetTest()} className="flex-1 px-4.5 py-2 rounded border border-border bg-surface-2 font-body text-[13px] font-medium text-ink-2 hover:bg-surface hover:text-ink transition-colors">
-                ↺ Retry
-              </button>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full pt-4">
               <button 
-                onClick={nextLesson}
-                disabled={lessonIndex === LESSONS.length - 1}
-                className="flex-1 px-4.5 py-2 rounded border border-ink bg-ink font-body text-[13px] font-medium text-white hover:bg-[#2D2A27] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={passed ? () => resetTest() : generateDrill} 
+                className="flex-1 px-6 py-3 rounded-xl border border-border bg-surface-2 font-body text-[13px] sm:text-[14px] font-bold text-ink hover:bg-surface-3 transition-all"
               >
-                Next Lesson →
+                {passed ? "Repeat" : "Start Remediation"}
               </button>
+              {passed && (
+                <button 
+                  onClick={nextLesson}
+                  className="flex-1 px-6 py-3 rounded-xl bg-accent font-body text-[13px] sm:text-[14px] font-bold text-white hover:brightness-110 transition-all shadow-lg shadow-accent/20"
+                >
+                  Next Lesson
+                </button>
+              )}
             </div>
           </div>
         </div>

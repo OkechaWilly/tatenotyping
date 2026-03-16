@@ -50,6 +50,9 @@ export function useTypingEngine(
     return { wpm, rawWpm, accuracy, errors };
   }, [typed, text, minutesElapsed, totalKeystrokes, errors]);
 
+  // Per-key tracking
+  const [keyStats, setKeyStats] = useState<Record<string, { attempts: number; errors: number }>>({});
+
   const [hasCompleted, setHasCompleted] = useState(false);
 
   useEffect(() => {
@@ -76,58 +79,67 @@ export function useTypingEngine(
     startTimeRef.current = null;
     setErrors(0);
     setTotalKeystrokes(0);
+    setKeyStats({});
     if (timerRef.current) clearInterval(timerRef.current);
   }, [totalTime]);
 
   // Handle typing input
   const handleInput = useCallback((val: string) => {
+    if (isFinished) return;
     if (!isActive) {
       startTest();
     }
     
-    // Prevent typing beyond text length (if hard stop)
+    // Prevent typing beyond text length
     if (val.length > text.length) return;
 
-    setTyped(val);
-    // Check for new errors
+    // Check for new keystrokes
     if (val.length > typed.length) {
       const charTyped = val[val.length - 1];
       const charExpected = text[val.length - 1];
+      const key = charExpected.toLowerCase();
       
+      setKeyStats(prev => ({
+        ...prev,
+        [key]: {
+          attempts: (prev[key]?.attempts || 0) + 1,
+          errors: (prev[key]?.errors || 0) + (charTyped !== charExpected ? 1 : 0)
+        }
+      }));
+
       if (charTyped !== charExpected) {
         setErrors((prev) => prev + 1);
         
-        // Advanced: Sudden Death - any error fails/resets the test
         if (difficulty === "Advanced") {
           setIsFinished(true);
           setIsActive(false);
           if (timerRef.current) clearInterval(timerRef.current);
+          setTyped(val);
+          return;
+        }
+
+        if (difficulty === "Intermediate") {
+          // In intermediate, we don't update typed if it's wrong (must correct)
+          setTotalKeystrokes((prev) => prev + 1);
           return;
         }
       }
-    }
 
-    // Intermediate: Strict - cannot proceed if current char is wrong
-    if (difficulty === "Intermediate" && val.length > 0) {
-      if (val[val.length - 1] !== text[val.length - 1]) {
-        // If the last typed character is incorrect, prevent further typing
-        // by not updating `typed` and `totalKeystrokes` for this input.
-        // This effectively makes the input field "stuck" until the error is corrected.
-        return; 
-      }
+      setTyped(val);
+      setTotalKeystrokes((prev) => prev + 1);
+    } else {
+        // Handle backspace
+        setTyped(val);
     }
-
-    setTyped(val);
-    setTotalKeystrokes((prev) => prev + 1);
 
     // Check for completion by length
-    if (val.length === text.length) {
+    if (val.length === text.length && val[val.length-1] === text[val.length-1]) {
        setIsFinished(true);
        setIsActive(false);
        if (timerRef.current) clearInterval(timerRef.current);
     }
 
-  }, [isActive, text, typed, startTest, difficulty]);
+  }, [isActive, isFinished, text, typed, startTest, difficulty]);
 
   // Timer effect
   useEffect(() => {
@@ -150,22 +162,37 @@ export function useTypingEngine(
   }, [isActive, isFinished, totalTime]);
 
   // Keep focus on click anywhere if active
-  const focusInput = () => {
+  const focusInput = useCallback(() => {
     if (inputRef.current) inputRef.current.focus();
-  };
+  }, []);
 
-  return {
+  // Stabilize the return object
+  return useMemo(() => ({
     text,
     typed,
     isActive,
     isFinished,
     timeLeft,
     stats,
+    keyStats,
     inputRef,
     handleInput,
     startTest,
     resetTest,
     focusInput,
     difficulty,
-  };
+  }), [
+    text, 
+    typed, 
+    isActive, 
+    isFinished, 
+    timeLeft, 
+    stats, 
+    keyStats, 
+    handleInput, 
+    startTest, 
+    resetTest, 
+    focusInput, 
+    difficulty
+  ]);
 }

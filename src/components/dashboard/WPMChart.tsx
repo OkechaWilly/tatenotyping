@@ -95,7 +95,7 @@ export default function WPMChart() {
         ) : wpmData.length === 0 ? (
           <div className="w-full h-[140px] flex items-center justify-center font-mono text-[10px] text-ink-3">No sessions yet</div>
         ) : (
-          <svg viewBox="0 0 520 140" preserveAspectRatio="none" className="w-full h-[140px] overflow-visible">
+          <svg viewBox="0 0 520 140" preserveAspectRatio="xMidYMid meet" className="w-full h-auto min-h-[140px] overflow-visible">
             <defs>
               <linearGradient id="wpmGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="var(--accent)" />

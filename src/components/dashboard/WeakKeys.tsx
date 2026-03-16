@@ -6,7 +6,12 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function WeakKeys() {
   const { user } = useAuth();
-  const [weakKeys, setWeakKeys] = useState<any[]>([]);
+  interface WeakKey {
+    key: string;
+    err: number;
+    cls: string;
+  }
+  const [weakKeys, setWeakKeys] = useState<WeakKey[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,7 +59,7 @@ export default function WeakKeys() {
           <button className="font-mono text-[10px] text-accent hover:underline">Train →</button>
         </div>
 
-        <div className="flex flex-wrap gap-2 content-start">
+        <div className="flex flex-wrap gap-2 sm:gap-3 content-start">
           {loading ? (
             <div className="font-mono text-[10px] text-ink-3">Loading keys...</div>
           ) : weakKeys.length === 0 ? (
@@ -63,11 +68,11 @@ export default function WeakKeys() {
             weakKeys.map((item) => (
               <div key={item.key} className="flex flex-col items-center gap-[3px]">
                 <div 
-                  className={`w-[34px] h-[34px] rounded-[5px] border flex items-center justify-center font-mono text-[13px] font-medium transition-transform duration-150 hover:-translate-y-[2px] cursor-default ${item.cls}`}
+                  className={`w-[30px] sm:w-[34px] h-[30px] sm:h-[34px] rounded-[5px] border flex items-center justify-center font-mono text-[12px] sm:text-[13px] font-medium transition-transform duration-150 hover:-translate-y-[2px] cursor-default ${item.cls}`}
                 >
                   {item.key}
                 </div>
-                <div className="font-mono text-[9px] text-ink-3">{item.err}%</div>
+                <div className="font-mono text-[8px] sm:text-[9px] text-ink-3">{item.err}%</div>
               </div>
             ))
           )}

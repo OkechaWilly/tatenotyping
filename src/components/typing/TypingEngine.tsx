@@ -6,6 +6,8 @@ interface TypingEngineProps {
   mode: string;
 }
 
+import { RefreshCw, Plus, Palette, Terminal } from "lucide-react";
+
 export default function TypingEngine({ engine, mode }: TypingEngineProps) {
   const { text, typed, isActive, isFinished, stats, inputRef, handleInput, startTest, resetTest, focusInput, difficulty } = engine;
     // Keyboard shortcuts
@@ -28,40 +30,46 @@ export default function TypingEngine({ engine, mode }: TypingEngineProps) {
         const next = current === "light" ? "dark" : "light";
         document.documentElement.setAttribute("data-theme", next);
         localStorage.setItem("tateno-theme", next);
-        // Dispatch event for other components (like Nav) to sync if needed
         window.dispatchEvent(new Event("storage"));
     };
 
   return (
     <div className="flex flex-col h-full bg-bg relative">
       {/* ProgressBar */}
-      <div className="h-[2px] bg-border shrink-0">
+      <div className="h-1 bg-surface-3 shrink-0">
         <div 
-          className="h-full bg-accent transition-all duration-100 rounded-r-[1px]" 
+          className="h-full bg-accent transition-all duration-300 rounded-r-full shadow-[0_0_10px_var(--accent)]" 
           style={{ width: `${Math.min(100, (typed.length / text.length) * 100)}%` }} 
         />
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-12 py-8 relative overflow-hidden" onClick={focusInput}>
+      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12 relative overflow-hidden" onClick={focusInput}>
         {/* Meta */}
-        <div className="flex items-center gap-3 mb-6 self-start max-w-[760px] w-full mx-auto">
-          <div className="font-mono text-[10px] tracking-[0.08em] uppercase text-ink-3">en-US · Performance</div>
-          <div className="font-mono text-[10px] px-2 py-0.5 rounded-[2px] border border-border text-ink-3 shrink-0 capitalize">{difficulty}</div>
-          <div className="font-mono text-[10px] px-2 py-0.5 rounded-[2px] border border-border text-ink-3 shrink-0 uppercase">{mode}</div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mb-6 sm:mb-8 self-center max-w-[840px] w-full mx-auto justify-between">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 font-mono text-[10px] sm:text-[11px] tracking-wider text-ink-3 uppercase bg-surface-2 px-2.5 py-1 rounded-full border border-border">
+              <Terminal size={12} />
+              en-US
+            </div>
+            <div className="font-mono text-[10px] sm:text-[11px] px-2.5 py-1 rounded-full border border-border text-ink-2 bg-surface capitalize font-bold">{difficulty}</div>
+            <div className="font-mono text-[10px] sm:text-[11px] px-2.5 py-1 rounded-full border border-border text-ink-2 bg-surface uppercase font-bold tracking-tighter">{mode}</div>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-[10px] sm:text-[11px] text-accent font-bold animate-pulse">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+            LIVE PERFORMANCE
+          </div>
         </div>
 
         {/* Display */}
-        <div className={`relative max-w-[760px] w-full bg-surface border border-border rounded-lg px-9 py-8 shadow-sm mx-auto transition-all ${isActive ? 'ring-1 ring-accent/20 border-accent/30' : ''}`}>
-          <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-accent rounded-l-lg opacity-0 transition-opacity duration-300 before-marker" style={{ opacity: isActive ? 1 : 0 }} />
-          
-          <div className="font-mono text-[20px] leading-[1.7] tracking-[0.01em] text-pending break-words select-none text-left">
+        <div className={`relative max-w-[840px] w-full bg-surface border-2 border-border rounded-2xl px-6 sm:px-12 py-8 sm:py-12 shadow-2xl mx-auto transition-all duration-500 scale-[1.01] ${isActive ? 'border-accent/40 shadow-accent/5' : ''}`}>
+          <div className="font-mono text-[18px] sm:text-[24px] leading-[1.6] sm:leading-[1.8] tracking-[0.02em] text-ink-4 break-words select-none text-left">
             {text.split('').map((char, i) => {
-              let charClass = "relative transition-colors duration-75 ";
+              let charClass = "relative transition-all duration-75 ";
               if (i < typed.length) {
-                charClass += typed[i] === char ? "text-ink " : "text-error bg-error/10 rounded-[1px] ";
+                charClass += typed[i] === char ? "text-ink " : "text-error bg-error/5 ring-1 ring-error/20 rounded-[2px] ";
               }
               if (i === typed.length && isActive) {
-                charClass += "text-ink after:content-[''] after:absolute after:left-0 after:top-[2px] after:bottom-[2px] after:w-[2px] after:bg-accent after:rounded-[1px] after:animate-blink";
+                charClass += "text-ink after:content-[''] after:absolute after:left-0 after:top-[4px] after:bottom-[4px] after:w-[3px] after:bg-accent after:rounded-full after:animate-blink shadow-[0_0_15px_var(--accent)]";
               }
               
               return (
@@ -84,12 +92,12 @@ export default function TypingEngine({ engine, mode }: TypingEngineProps) {
           {/* Start Overlay */}
           {!isActive && !isFinished && (
             <div 
-              className="absolute inset-0 flex items-center justify-center rounded-lg cursor-text transition-all duration-200 group bg-surface/40 backdrop-blur-[1px]"
+              className="absolute inset-0 flex items-center justify-center rounded-2xl cursor-text transition-all duration-300 group bg-surface/20 backdrop-blur-[2px]"
               onClick={startTest}
             >
-              <div className="flex items-center gap-2 bg-surface border border-border px-5 py-2.5 rounded-full text-[13px] text-ink-2 shadow-md transition-all duration-200 pointer-events-none group-hover:-translate-y-1">
-                Click or press any key to begin 
-                <kbd className="bg-surface-2 border border-border-strong rounded-[3px] px-1.5 py-[1px] font-mono text-[11px] text-ink shadow-[0_2px_0_var(--border-strong)]">↵</kbd>
+              <div className="flex items-center gap-3 bg-accent text-white px-8 py-4 rounded-full text-sm font-bold shadow-2xl transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
+                Press any key to begin 
+                <kbd className="bg-white/20 border border-white/30 rounded-lg px-2 py-1 font-mono text-xs text-white">↵</kbd>
               </div>
             </div>
           )}
@@ -97,52 +105,55 @@ export default function TypingEngine({ engine, mode }: TypingEngineProps) {
       </div>
 
       {/* Action Bar */}
-      <div className="flex items-center justify-center gap-3 px-8 py-4 border-t border-border bg-surface shrink-0">
+      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 px-4 sm:px-8 py-4 sm:py-6 border-t border-border bg-surface shrink-0">
         <button 
           onClick={() => resetTest(text)} 
-          className="flex items-center gap-1.5 px-4 y-1.5 rounded border border-border bg-surface-2 font-body text-[12px] font-medium text-ink-2 cursor-pointer transition-all duration-150 hover:border-border-strong hover:bg-surface hover:text-ink">
-          ↺ Restart <kbd className="bg-surface-3 rounded-[2px] px-1 py-[0.5px] font-mono text-[10px] text-ink-3 ml-1">Tab</kbd>
+          className="group flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full border border-border bg-surface-2 font-body text-[12px] sm:text-[13px] font-bold text-ink-2 cursor-pointer transition-all duration-200 hover:border-ink hover:bg-surface hover:text-ink">
+          <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500" />
+          Restart <kbd className="hidden sm:inline opacity-50 font-mono text-[10px] ml-1">Tab</kbd>
         </button>
         <button 
           onClick={() => resetTest()} 
-          className="flex items-center gap-1.5 px-4 y-1.5 rounded border border-ink bg-ink font-body text-[12px] font-medium text-white cursor-pointer transition-all duration-150 hover:bg-[#2D2A27]">
-          New Test <kbd className="bg-white/20 rounded-[2px] px-1 py-[0.5px] font-mono text-[10px] text-white ml-1">↵</kbd>
+          className="group flex items-center gap-2 px-6 sm:px-8 py-2 rounded-full border border-accent bg-accent font-body text-[12px] sm:text-[13px] font-bold text-white cursor-pointer transition-all duration-200 hover:brightness-110 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 shadow-md shadow-accent/20">
+          <Plus size={16} />
+          New Test <kbd className="hidden sm:inline opacity-30 font-mono text-[10px] ml-1">↵</kbd>
         </button>
         <button 
             onClick={toggleTheme}
-            className="flex items-center gap-1.5 px-4 y-1.5 rounded border border-border bg-surface-2 font-body text-[12px] font-medium text-ink-2 cursor-pointer transition-all duration-150 hover:border-border-strong hover:bg-surface hover:text-ink">
-          ⊕ Theme
+            className="flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full border border-border bg-surface-2 font-body text-[12px] sm:text-[13px] font-bold text-ink-2 cursor-pointer transition-all duration-200 hover:border-ink hover:bg-surface hover:text-ink">
+          <Palette size={16} />
+          Theme
         </button>
       </div>
 
       {/* Results Overlay */}
       {isFinished && (
         <div className="absolute inset-0 z-50 bg-bg/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-xl px-12 py-10 max-w-[540px] w-full shadow-md animate-slideUp">
-            <div className="flex items-baseline justify-between mb-8 border-b border-border pb-5">
-              <h2 className="font-display text-[22px] font-medium">Session Complete</h2>
+          <div className="bg-surface border border-border rounded-xl px-6 sm:px-12 py-8 sm:py-10 max-w-[540px] w-full shadow-md animate-slideUp">
+            <div className="flex items-baseline justify-between mb-6 sm:mb-8 border-b border-border pb-5 gap-4">
+              <h2 className="font-body text-[18px] sm:text-[22px] font-medium">Session Complete</h2>
               <div className="font-mono text-[11px] px-3 py-1 rounded-full bg-accent-light text-accent border border-accent/20">
                 Performance Verified
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-px bg-border rounded-lg overflow-hidden mb-8">
-              <div className="bg-surface p-4 flex flex-col items-center gap-1">
-                <div className="font-mono text-[32px] font-normal text-ink tracking-[-0.02em]">{stats.wpm}</div>
-                <div className="font-mono text-[9px] tracking-[0.1em] uppercase text-ink-3">WPM</div>
+            <div className="grid grid-cols-3 gap-px bg-border rounded-lg overflow-hidden mb-6 sm:mb-8">
+              <div className="bg-surface p-2 sm:p-4 flex flex-col items-center gap-1">
+                <div className="font-mono text-[24px] sm:text-[32px] font-normal text-ink tracking-[-0.02em]">{stats.wpm}</div>
+                <div className="font-mono text-[8px] sm:text-[9px] tracking-[0.1em] uppercase text-ink-3">WPM</div>
               </div>
-              <div className="bg-surface p-4 flex flex-col items-center gap-1">
-                <div className="font-mono text-[32px] font-normal text-ink tracking-[-0.02em]">{stats.accuracy}%</div>
-                <div className="font-mono text-[9px] tracking-[0.1em] uppercase text-ink-3">Accuracy</div>
+              <div className="bg-surface p-2 sm:p-4 flex flex-col items-center gap-1">
+                <div className="font-mono text-[24px] sm:text-[32px] font-normal text-ink tracking-[-0.02em]">{stats.accuracy}%</div>
+                <div className="font-mono text-[8px] sm:text-[9px] tracking-[0.1em] uppercase text-ink-3">Accuracy</div>
               </div>
-              <div className="bg-surface p-4 flex flex-col items-center gap-1">
-                <div className="font-mono text-[32px] font-normal text-ink tracking-[-0.02em]">{stats.errors}</div>
-                <div className="font-mono text-[9px] tracking-[0.1em] uppercase text-ink-3">Errors</div>
+              <div className="bg-surface p-2 sm:p-4 flex flex-col items-center gap-1">
+                <div className="font-mono text-[24px] sm:text-[32px] font-normal text-ink tracking-[-0.02em]">{stats.errors}</div>
+                <div className="font-mono text-[8px] sm:text-[9px] tracking-[0.1em] uppercase text-ink-3">Errors</div>
               </div>
             </div>
 
             <div className="flex gap-2">
-              <button onClick={() => resetTest()} className="flex-1 bg-ink text-white font-medium text-[13px] py-2.5 rounded border border-ink hover:bg-[#2D2A27] transition-colors">
+              <button onClick={() => resetTest()} className="flex-1 bg-accent text-white font-bold text-[13px] py-2.5 rounded border border-accent hover:brightness-110 transition-colors shadow-sm">
                 New Test
               </button>
               <button onClick={() => resetTest(text)} className="flex-1 bg-surface-2 text-ink-2 font-medium text-[13px] py-2.5 rounded border border-border hover:bg-surface hover:text-ink transition-colors">

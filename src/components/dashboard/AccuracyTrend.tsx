@@ -48,13 +48,13 @@ export default function AccuracyTrend() {
   const worstAcc = data.length > 0 ? Math.min(...data.map(d => d.val)) : 0;
 
   return (
-    <div className="bg-surface border border-border rounded-[10px] p-6 shadow-sm flex flex-col h-full">
+    <div className="bg-surface border border-border rounded-[10px] p-4 sm:p-6 shadow-sm flex flex-col h-full">
       <div className="flex justify-between items-baseline mb-4">
-        <div className="font-mono text-[10px] font-medium tracking-[0.12em] uppercase text-ink-3">Accuracy · Recent</div>
-        <div className="font-mono text-[11px] text-green">{avgAcc}% avg</div>
+        <div className="font-mono text-[9px] sm:text-[10px] font-medium tracking-[0.12em] uppercase text-ink-3">Accuracy · Recent</div>
+        <div className="font-mono text-[10px] sm:text-[11px] text-green">{avgAcc}% avg</div>
       </div>
 
-      <div className="flex items-end gap-1.5 h-[100px]">
+      <div className="flex items-end gap-1 sm:gap-1.5 h-[100px]">
         {loading ? (
           <div className="flex-1 flex items-center justify-center font-mono text-[10px] text-ink-3">Loading...</div>
         ) : data.length === 0 ? (
@@ -68,8 +68,8 @@ export default function AccuracyTrend() {
                   className="w-full rounded-t-[3px] bg-green transition-all duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] cursor-pointer group-hover:brightness-110"
                   style={{ height: mounted ? `${height}%` : "0%" }}
                 />
-                <div className="font-mono text-[9px] text-ink-3 group-hover:text-ink">{item.val}%</div>
-                <div className="font-mono text-[8px] text-ink-4 whitespace-nowrap">{item.day}</div>
+                <div className="font-mono text-[8px] sm:text-[9px] text-ink-3 group-hover:text-ink">{item.val}%</div>
+                <div className="font-mono text-[8px] text-ink-4 whitespace-nowrap hidden sm:block">{item.day}</div>
               </div>
             );
           })

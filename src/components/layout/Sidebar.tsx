@@ -10,6 +10,7 @@ export default function Sidebar() {
     { id: "quotes", name: "Quotes", sub: "Literature", icon: "❝", iconStyle: "text-[11px]" },
     { id: "code", name: "Code", sub: "Syntax focused", icon: "{}", iconStyle: "text-[11px]" },
     { id: "prose", name: "Prose", sub: "Long form", icon: "¶", iconStyle: "text-[10px]" },
+    { id: "realworld", name: "Real-world", sub: "Dynamic texts", icon: "🌍", iconStyle: "text-[11px]" },
     { id: "numbers", name: "Numbers", sub: "Numeric pad", icon: "01", iconStyle: "text-[11px]" },
   ];
 

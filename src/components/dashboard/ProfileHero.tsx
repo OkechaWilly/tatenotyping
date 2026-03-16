@@ -36,7 +36,7 @@ export default function ProfileHero() {
   const xpToNext = nextLevelXp - currentLevelXp;
 
   return (
-    <div className="grid grid-cols-[1fr_auto] gap-5 items-start bg-surface border border-border rounded-xl px-8 py-7 shadow-sm relative overflow-hidden animate-fadeUp">
+    <div className="flex flex-col md:grid md:grid-cols-[1fr_auto] gap-6 sm:gap-5 items-start bg-surface border border-border rounded-xl px-4 sm:px-8 py-6 sm:py-7 shadow-sm relative overflow-hidden animate-fadeUp">
       {/* Decorative radial gradient */}
       <div className="absolute -right-10 -top-10 w-[220px] h-[220px] rounded-full bg-[radial-gradient(circle,rgba(196,67,26,0.06)_0%,transparent_70%)] pointer-events-none" />
 
@@ -47,23 +47,23 @@ export default function ProfileHero() {
         </div>
         
         <div className="flex flex-col gap-1">
-          <div className="font-display text-[22px] font-medium text-ink leading-[1.1]">{profile.username}</div>
-          <div className="flex items-center gap-2.5 font-mono text-[11px] text-ink-3">
-            <span>@{profile.username.toLowerCase()}</span>
+          <div className="font-display text-[20px] sm:text-[22px] font-medium text-ink leading-[1.1]">{profile?.username}</div>
+          <div className="flex items-center gap-2.5 font-mono text-[10px] sm:text-[11px] text-ink-3">
+            <span>@{profile?.username?.toLowerCase()}</span>
             <span className="text-border-strong">·</span>
-            <span>Member since {new Date(profile.created_at).toLocaleDateString("en-US", { month: 'short', year: 'numeric' })}</span>
+            <span>Member since {profile?.created_at ? new Date(profile.created_at).toLocaleDateString("en-US", { month: 'short', year: 'numeric' }) : '...'}</span>
           </div>
-          <div className="flex gap-1.5 mt-1">
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[10px] font-medium border bg-green-light text-green border-[#2D6A4F33]">✓ Verified</div>
-            {profile.streak_current >= 7 && (
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[10px] font-medium border bg-accent-light text-accent border-[#C4431A33]">🔥 {profile.streak_current}-Day Streak</div>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[9px] sm:text-[10px] font-medium border bg-green-light text-green border-[#2D6A4F33]">✓ Verified</div>
+            {profile && profile.streak_current >= 7 && (
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[9px] sm:text-[10px] font-medium border bg-accent-light text-accent border-[#C4431A33]">🔥 {profile.streak_current}-Day Streak</div>
             )}
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[10px] font-medium border bg-blue-light text-blue border-[#2E5F8A33]">💼 Pro</div>
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[9px] sm:text-[10px] font-medium border bg-blue-light text-blue border-[#2E5F8A33]">💼 Pro</div>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5 min-w-[240px]">
+      <div className="flex flex-col gap-2 w-full md:w-auto md:min-w-[240px]">
         <div className="flex items-end gap-2.5 mb-2">
           <div className="flex items-center gap-1.5">
             <div className="font-display text-[28px] font-semibold text-ink leading-none">{profile.level}</div>

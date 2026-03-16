@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { type User, type Session } from "@supabase/supabase-js";
 
@@ -38,6 +38,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
 
+  const fetchProfile = useCallback(async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    if (data) {
+      setProfile(data);
+    } else if (error && error.code === "PGRST116") {
+      // Profile not found, could be a fresh sign up
+      console.log("Profile not found for user:", userId);
+    }
+  }, [supabase]);
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+  }, [supabase]);
+
   useEffect(() => {
     // Get initial session
     const initAuth = async () => {
@@ -67,26 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-
-    if (data) {
-      setProfile(data);
-    } else if (error && error.code === "PGRST116") {
-      // Profile not found, could be a fresh sign up
-      console.log("Profile not found for user:", userId);
-    }
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-  };
+  }, [supabase, fetchProfile]);
 
   return (
     <AuthContext.Provider value={{ user, session, profile, isLoading, signOut }}>

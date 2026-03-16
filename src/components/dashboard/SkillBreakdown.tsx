@@ -8,7 +8,14 @@ export default function SkillBreakdown() {
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [skills, setSkills] = useState<any[]>([]);
+  interface Skill {
+    name: string;
+    val: number;
+    max: number;
+    color: string;
+    label: string;
+  }
+  const [skills, setSkills] = useState<Skill[]>([]);
 
   useEffect(() => {
     setMounted(true);

@@ -1,22 +1,16 @@
 import type { Metadata } from "next";
-import { Playfair_Display, DM_Mono, DM_Sans } from "next/font/google";
+import { Fira_Code, Fira_Sans } from "next/font/google";
 import "./globals.css";
 
-const playfairDisplay = Playfair_Display({
+const firaCode = Fira_Code({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-display",
-});
-
-const dmMono = DM_Mono({
-  subsets: ["latin"],
-  weight: ["300", "400", "500"],
   variable: "--font-mono",
 });
 
-const dmSans = DM_Sans({
+const firaSans = Fira_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-body",
 });
 
@@ -33,8 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${playfairDisplay.variable} ${dmMono.variable} ${dmSans.variable}`}>
-      <body className="font-body bg-bg text-ink min-h-screen flex flex-col antialiased">
+    <html lang="en" className={`${firaSans.variable} ${firaCode.variable} font-body`}>
+      <body className="bg-bg text-ink min-h-screen flex flex-col antialiased">
         <AuthProvider>
           {children}
         </AuthProvider>
