@@ -13,8 +13,7 @@ export default function TypingContainer() {
   const { user } = useAuth();
   const [text, setText] = useState("");
   
-  // Optimize text selection and load instantly
-  useEffect(() => {
+  const generateText = useCallback(() => {
     const data = TYPING_DATA[mode as keyof typeof TYPING_DATA] || TYPING_DATA.words;
     let newText = "";
     
@@ -29,6 +28,11 @@ export default function TypingContainer() {
     
     setText(newText);
   }, [mode]);
+  
+  // Optimize text selection and load instantly
+  useEffect(() => {
+    generateText();
+  }, [generateText]);
 
   const handleSessionComplete = useCallback(async (stats: TypingStats) => {
     if (!user) return; 
@@ -64,7 +68,7 @@ export default function TypingContainer() {
         totalTime={duration}
       />
       <div className="flex-1 overflow-hidden">
-        <TypingEngine engine={engine} mode={mode} />
+        <TypingEngine engine={engine} mode={mode} onNewTest={generateText} />
       </div>
     </main>
   );

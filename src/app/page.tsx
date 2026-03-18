@@ -43,7 +43,7 @@ export default function Home() {
             <div className="flex items-center justify-center gap-6 animate-fadeUp" style={{ animationDelay: "0.2s" }}>
               <Link 
                 href="/type" 
-                className="px-10 py-4 bg-ink text-white rounded-full font-medium shadow-2xl hover:bg-[#2D2A27] hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 group"
+                className="px-10 py-4 bg-accent text-white rounded-full font-medium shadow-2xl hover:brightness-110 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 group shadow-accent/20"
               >
                 Start Typing
                 <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />

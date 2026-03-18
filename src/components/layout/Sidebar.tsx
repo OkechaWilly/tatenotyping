@@ -71,7 +71,7 @@ export default function Sidebar() {
               onClick={() => setDuration(dur.val as Duration)}
               className={`border rounded px-1 py-1.5 font-mono text-[11px] font-medium cursor-pointer text-center transition-all duration-150 ${
                 duration === dur.val
-                  ? "bg-ink text-white border-ink"
+                  ? "bg-accent text-white border-accent shadow-sm shadow-accent/20"
                   : "bg-surface-2 border-border text-ink-2 hover:border-border-strong"
               }`}
             >
@@ -91,7 +91,7 @@ export default function Sidebar() {
               onClick={() => setDifficulty(diff.name as Difficulty)}
               className={`flex items-center justify-between px-2.5 py-[7px] rounded border cursor-pointer text-xs font-medium transition-all duration-150 ${
                 difficulty === diff.name
-                  ? "bg-ink text-white border-ink"
+                  ? "bg-accent text-white border-accent shadow-sm shadow-accent/20"
                   : "bg-surface-2 border-border text-ink-2 hover:border-border-strong"
               }`}
             >

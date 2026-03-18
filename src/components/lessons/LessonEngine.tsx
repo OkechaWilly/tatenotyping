@@ -15,20 +15,25 @@ export default function LessonEngine() {
   const [passed, setPassed] = useState(false);
   const [drillMode, setDrillMode] = useState(false);
   const [drillText, setDrillText] = useState("");
-  
+
+  const [selectedCategory, setSelectedCategory] = useState<string>("Beginner");
+
+  const filteredLessons = LESSONS.filter(l => l.category === selectedCategory);
+  const currentLessonInFiltered = filteredLessons.findIndex(l => l.id === currentLesson.id);
+
   const handleLessonComplete = useCallback(async (stats: { wpm: number; accuracy: number; errors: number; rawWpm: number }) => {
     const isSuccess = stats.accuracy >= 90;
     setPassed(isSuccess);
 
     if (!user) return;
-    
+
     const { createClient } = (await import("@/lib/supabase/client"));
     const supabase = createClient();
-    
+
     // Save lesson progress
     await supabase.from("lesson_progress").upsert({
       user_id: user.id,
-      lesson_id: currentLesson.id || `lesson-${lessonIndex}`,
+      lesson_id: currentLesson.id,
       completed: isSuccess,
       best_wpm: stats.wpm,
       best_accuracy: stats.accuracy,
@@ -44,7 +49,7 @@ export default function LessonEngine() {
       duration: 0,
       textUsed: drillMode ? drillText : currentLesson.text,
     });
-  }, [user, currentLesson, lessonIndex, drillMode, drillText]);
+  }, [user, currentLesson, drillMode, drillText]);
 
   const engine = useTypingEngine(mounted ? (drillMode ? drillText : currentLesson.text) : "", 0, "Beginner", handleLessonComplete);
   const { text, typed, isActive, isFinished, startTest, resetTest, handleInput, inputRef, keyStats } = engine;
@@ -59,13 +64,13 @@ export default function LessonEngine() {
       setDrillText("");
       resetTest(currentLesson.text);
     }
-  }, [lessonIndex, currentLesson.text, resetTest, mounted]);
+  }, [currentLesson.text, resetTest, mounted]);
 
   const generateDrill = () => {
     const weakKeys = Object.entries(keyStats)
       .filter(([, stats]) => (stats.attempts - stats.errors) / stats.attempts < 0.9)
       .map(([key]) => key);
-    
+
     if (weakKeys.length === 0) {
       resetTest(currentLesson.text);
       return;
@@ -74,8 +79,8 @@ export default function LessonEngine() {
     // Generate remediation drill: repeat weak keys in groups
     let drill = "";
     for (let i = 0; i < 15; i++) {
-        const key = weakKeys[Math.floor(Math.random() * weakKeys.length)];
-        drill += `${key}${key}${key} `;
+      const key = weakKeys[Math.floor(Math.random() * weakKeys.length)];
+      drill += `${key}${key}${key} `;
     }
     const finalDrill = drill.trim();
     setDrillText(finalDrill);
@@ -84,27 +89,51 @@ export default function LessonEngine() {
   };
 
   const nextLesson = () => {
-    if (lessonIndex < LESSONS.length - 1 && passed) {
-      setLessonIndex(lessonIndex + 1);
+    const globalIndex = LESSONS.findIndex(l => l.id === currentLesson.id);
+    if (globalIndex < LESSONS.length - 1 && passed) {
+      const nextL = LESSONS[globalIndex + 1];
+      setLessonIndex(globalIndex + 1);
+      setSelectedCategory(nextL.category);
       setPassed(false);
     }
   };
 
   const targetKey = text[Math.min(typed.length, text.length - 1)];
 
+  const categories = ["Beginner", "Intermediate", "Advanced"];
+
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-bg relative">
-      <div className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-3.5 border-b border-border bg-surface shrink-0">
-        <div className="font-mono text-[9px] sm:text-[10px] tracking-[0.08em] text-ink-3 flex items-center gap-1.5 truncate mr-2">
-          Lessons / {currentLesson.category} / <span className="text-ink-2 font-medium truncate">{currentLesson.title}</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-8 py-3 sm:py-3 border-b border-border bg-surface shrink-0 gap-3">
+        <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => {
+                setSelectedCategory(cat);
+                const firstInCat = LESSONS.findIndex(l => l.category === cat);
+                setLessonIndex(firstInCat);
+              }}
+              className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${selectedCategory === cat
+                ? "bg-accent text-white border-accent shadow-sm shadow-accent/20"
+                : "bg-surface-2 text-ink-3 border-border hover:border-ink-4 hover:text-ink-2"
+                }`}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
-        <div className="flex gap-1 shrink-0">
-          {LESSONS.map((lesson, i) => (
-            <div 
-              key={i} 
-              className={`w-2.5 sm:w-4 h-[3px] rounded-[2px] transition-all ${
-                i === lessonIndex ? "bg-accent" : i < lessonIndex ? "bg-accent opacity-40" : "bg-border"
-              }`} 
+
+        <div className="flex gap-1 shrink-0 bg-surface-2 p-1 rounded-lg">
+          {filteredLessons.map((lesson, i) => (
+            <div
+              key={lesson.id}
+              onClick={() => setLessonIndex(LESSONS.findIndex(l => l.id === lesson.id))}
+              className={`w-4 h-1.5 rounded-[1px] transition-all cursor-pointer ${lesson.id === currentLesson.id
+                ? "bg-accent scale-x-125"
+                : "bg-border hover:bg-ink-4"
+                }`}
+              title={lesson.title}
             />
           ))}
         </div>
@@ -119,19 +148,15 @@ export default function LessonEngine() {
             {drillMode ? "Remediation Drill" : currentLesson.title}
           </div>
           <div className="text-[12px] sm:text-[13px] text-ink-3 max-w-[420px] leading-[1.5] mx-auto">
-            {drillMode 
+            {drillMode
               ? "Focus on the characters below. Accuracy is key to proceeding."
               : currentLesson.description}
           </div>
         </div>
 
-        <div className="w-full max-w-[680px]">
-           <LetterMasteryGraph keyStats={keyStats} />
-        </div>
-
         <div className="bg-surface border border-border rounded-lg px-6 sm:px-8 py-8 sm:py-10 w-full max-w-[680px] shadow-sm relative cursor-text group">
           <div className={`absolute left-0 top-0 bottom-0 w-[4px] bg-accent rounded-l-lg transition-opacity ${isActive ? 'opacity-100' : 'opacity-0'}`} />
-          
+
           <div className="font-mono text-[18px] sm:text-[22px] leading-[1.8] sm:leading-[2] tracking-[0.04em] sm:tracking-[0.06em] text-pending select-none break-words text-center">
             {text.split('').map((char, i) => {
               let charClass = "relative transition-all duration-75 ";
@@ -139,7 +164,7 @@ export default function LessonEngine() {
                 charClass += typed[i] === char ? "text-ink " : "text-error bg-error/10 rounded-[2px] ";
               }
               if (i === typed.length && isActive) charClass += "text-ink border-b-2 border-accent animate-pulse";
-              
+
               return (
                 <span key={i} className={charClass}>
                   {char === ' ' ? '\u00A0' : char}
@@ -158,7 +183,7 @@ export default function LessonEngine() {
           />
 
           {!isActive && !isFinished && (
-            <div 
+            <div
               className="absolute inset-0 flex items-center justify-center rounded-lg cursor-text transition-all duration-200 group bg-surface/40 backdrop-blur-[1px]"
               onClick={startTest}
             >
@@ -174,11 +199,16 @@ export default function LessonEngine() {
           <Keyboard activeKey={!isFinished ? targetKey : ""} />
         </div>
 
+        <div className="w-full max-w-[680px] mt-4">
+          <div className="text-[10px] font-mono uppercase tracking-widest text-ink-3 mb-3 text-center">Key Mastery Profile</div>
+          <LetterMasteryGraph keyStats={keyStats} />
+        </div>
+
         <div className="flex items-center gap-3 sm:gap-4 bg-surface-2/50 backdrop-blur-sm border border-border rounded-xl px-4 sm:px-5 py-3 sm:py-4 w-full max-w-[620px] shadow-sm mb-4">
           <div className="w-10 h-10 rounded-xl bg-accent/5 flex items-center justify-center text-accent shrink-0 border border-accent/10">
-             <span className="font-mono text-base sm:text-lg font-bold">
-               {targetKey === " " ? "␣" : targetKey?.toUpperCase() || "—"}
-             </span>
+            <span className="font-mono text-base sm:text-lg font-bold">
+              {targetKey === " " ? "␣" : targetKey?.toUpperCase() || "—"}
+            </span>
           </div>
           <div className="flex-1">
             <div className="text-[12px] sm:text-[13px] font-semibold text-ink">Focus Area</div>
@@ -190,22 +220,21 @@ export default function LessonEngine() {
       {isFinished && (
         <div className="absolute inset-0 z-50 bg-bg/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-surface border border-border rounded-2xl p-6 sm:p-10 max-w-[520px] w-full shadow-2xl animate-fadeUp text-center flex flex-col items-center gap-4">
-            <div className={`px-4 py-1.5 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-widest border ${
-              passed ? "bg-green/10 text-green border-green/20" : "bg-error/10 text-error border-error/20"
-            }`}>
+            <div className={`px-4 py-1.5 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-widest border ${passed ? "bg-green/10 text-green border-green/20" : "bg-error/10 text-error border-error/20"
+              }`}>
               {passed ? "Mastered" : "Needs Practice"}
             </div>
-            
+
             <h2 className="font-display text-[24px] sm:text-3xl font-bold text-ink">
               {passed ? "Excellent Progress!" : "Keep Working"}
             </h2>
-            
+
             <div className="text-[13px] sm:text-[14px] text-ink-3 leading-relaxed">
-              {passed 
+              {passed
                 ? "You've successfully cleared the accuracy threshold. Ready for the next challenge."
                 : "You didn't reach the 90% accuracy requirement. We've prepared a remediation drill based on your weak keys."}
             </div>
-            
+
             <div className="flex justify-center gap-6 sm:gap-10 w-full py-6 border-y border-border/50">
               <div className="flex flex-col items-center">
                 <div className="font-mono text-[24px] sm:text-3xl font-bold text-ink">{engine.stats.wpm}</div>
@@ -224,14 +253,14 @@ export default function LessonEngine() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full pt-4">
-              <button 
-                onClick={passed ? () => resetTest() : generateDrill} 
+              <button
+                onClick={passed ? () => resetTest() : generateDrill}
                 className="flex-1 px-6 py-3 rounded-xl border border-border bg-surface-2 font-body text-[13px] sm:text-[14px] font-bold text-ink hover:bg-surface-3 transition-all"
               >
                 {passed ? "Repeat" : "Start Remediation"}
               </button>
               {passed && (
-                <button 
+                <button
                   onClick={nextLesson}
                   className="flex-1 px-6 py-3 rounded-xl bg-accent font-body text-[13px] sm:text-[14px] font-bold text-white hover:brightness-110 transition-all shadow-lg shadow-accent/20"
                 >

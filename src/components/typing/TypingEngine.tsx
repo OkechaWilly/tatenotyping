@@ -4,11 +4,12 @@ import { useTypingEngine } from "@/hooks/useTypingEngine";
 interface TypingEngineProps {
   engine: ReturnType<typeof useTypingEngine>;
   mode: string;
+  onNewTest: () => void;
 }
 
 import { RefreshCw, Plus, Palette, Terminal } from "lucide-react";
 
-export default function TypingEngine({ engine, mode }: TypingEngineProps) {
+export default function TypingEngine({ engine, mode, onNewTest }: TypingEngineProps) {
   const { text, typed, isActive, isFinished, stats, inputRef, handleInput, startTest, resetTest, focusInput, difficulty } = engine;
     // Keyboard shortcuts
     useEffect(() => {
@@ -113,7 +114,7 @@ export default function TypingEngine({ engine, mode }: TypingEngineProps) {
           Restart <kbd className="hidden sm:inline opacity-50 font-mono text-[10px] ml-1">Tab</kbd>
         </button>
         <button 
-          onClick={() => resetTest()} 
+          onClick={onNewTest} 
           className="group flex items-center gap-2 px-6 sm:px-8 py-2 rounded-full border border-accent bg-accent font-body text-[12px] sm:text-[13px] font-bold text-white cursor-pointer transition-all duration-200 hover:brightness-110 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 shadow-md shadow-accent/20">
           <Plus size={16} />
           New Test <kbd className="hidden sm:inline opacity-30 font-mono text-[10px] ml-1">↵</kbd>
@@ -153,7 +154,7 @@ export default function TypingEngine({ engine, mode }: TypingEngineProps) {
             </div>
 
             <div className="flex gap-2">
-              <button onClick={() => resetTest()} className="flex-1 bg-accent text-white font-bold text-[13px] py-2.5 rounded border border-accent hover:brightness-110 transition-colors shadow-sm">
+              <button onClick={onNewTest} className="flex-1 bg-accent text-white font-bold text-[13px] py-2.5 rounded border border-accent hover:brightness-110 transition-colors shadow-sm">
                 New Test
               </button>
               <button onClick={() => resetTest(text)} className="flex-1 bg-surface-2 text-ink-2 font-medium text-[13px] py-2.5 rounded border border-border hover:bg-surface hover:text-ink transition-colors">
