@@ -1,17 +1,36 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/lib/supabase/client";
+
 export default function Achievements() {
+  const { user } = useAuth();
+  const [unlockedKeys, setUnlockedKeys] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function fetchAchievements() {
+      if (!user) return;
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("achievements")
+        .select("achievement_key")
+        .eq("user_id", user.id);
+      
+      if (data) {
+        setUnlockedKeys(data.map(a => a.achievement_key));
+      }
+    }
+    fetchAchievements();
+  }, [user]);
+
   const achievements = [
     { icon: "⚡", name: "Speed Demon", desc: "Reach 80 WPM", unlocked: true },
     { icon: "🎯", name: "Sharpshooter", desc: "100% accuracy", unlocked: true },
     { icon: "🔥", name: "On Fire", desc: "7-day streak", unlocked: true },
-    { icon: "📚", name: "Word Wizard", desc: "10k words typed", unlocked: true },
-    { icon: "🌙", name: "Night Owl", desc: "Practice at midnight", unlocked: true },
-    { icon: "⌨️", name: "Home Row Hero", desc: "Complete home row lesson", unlocked: true },
-    { icon: "💎", name: "Diamond Hands", desc: "30-day streak", unlocked: false },
+    { icon: "⌨️", name: "Full Keyboard", desc: "Master all keys", unlocked: unlockedKeys.includes("full-keyboard") },
+    { icon: "📚", name: "Word Wizard", desc: "10k words typed", unlocked: false },
     { icon: "🚀", name: "Rocket", desc: "Reach 100 WPM", unlocked: false },
-    { icon: "🏆", name: "Champion", desc: "Top 1% globally", unlocked: false },
-    { icon: "📖", name: "Novelist", desc: "Type 100k words", unlocked: false },
     { icon: "🎓", name: "Graduate", desc: "Complete all lessons", unlocked: false },
     { icon: "⏰", name: "Marathoner", desc: "50 hours total", unlocked: false },
   ];

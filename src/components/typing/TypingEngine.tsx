@@ -5,12 +5,22 @@ interface TypingEngineProps {
   engine: ReturnType<typeof useTypingEngine>;
   mode: string;
   onNewTest: () => void;
+  onPrescriptionDrill?: (weakKeys: string[]) => void;
+  rwCategory?: string;
+  onRwCategoryChange?: (cat: string) => void;
 }
 
-import { RefreshCw, Plus, Palette, Terminal } from "lucide-react";
+import { RefreshCw, Plus, Palette, Terminal, Activity, Zap } from "lucide-react";
 
-export default function TypingEngine({ engine, mode, onNewTest }: TypingEngineProps) {
-  const { text, typed, isActive, isFinished, stats, inputRef, handleInput, startTest, resetTest, focusInput, difficulty } = engine;
+export default function TypingEngine({ 
+  engine, 
+  mode, 
+  onNewTest, 
+  onPrescriptionDrill,
+  rwCategory,
+  onRwCategoryChange 
+}: TypingEngineProps) {
+  const { text, typed, isActive, isFinished, stats, weakKeys, errorMap, notifications, inputRef, handleInput, startTest, resetTest, focusInput, difficulty } = engine;
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -34,13 +44,54 @@ export default function TypingEngine({ engine, mode, onNewTest }: TypingEnginePr
         window.dispatchEvent(new Event("storage"));
     };
 
+
   return (
-    <div className="flex flex-col h-full bg-bg relative">
+    <div
+      className="flex flex-col items-center justify-center h-full px-6 py-12 cursor-text transition-colors duration-200"
+      onClick={() => inputRef.current?.focus()}
+    >
+      {/* Toast Notifications */}
+      <div className="fixed top-24 right-8 z-[100] flex flex-col gap-3 pointer-events-none">
+        {notifications.map(n => (
+          <div key={n.id} className="bg-surface/80 backdrop-blur-md border border-accent/20 px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 animate-slideIn select-none max-w-sm">
+            <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent shrink-0 ring-1 ring-accent/20">
+              <Zap size={16} />
+            </div>
+            <p className="text-xs font-bold text-ink leading-tight tracking-wide">{n.message}</p>
+          </div>
+        ))}
+      </div>
+
+      {mode === "realworld" && (
+        <div className="flex gap-1.5 mb-10 bg-surface-2/50 backdrop-blur-sm p-1.5 rounded-2xl border border-border/50 shadow-lg">
+          {[
+            { id: "email", label: "Email" },
+            { id: "documentation", label: "Documentation" },
+            { id: "businessLetter", label: "Business Letter" },
+            { id: "personalLetter", label: "Personal Letter" }
+          ].map((cat) => (
+            <button
+              key={cat.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRwCategoryChange?.(cat.id);
+              }}
+              className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${
+                rwCategory === cat.id
+                  ? "bg-accent text-white shadow-xl shadow-accent/30 scale-105"
+                  : "text-ink-3 hover:text-ink-2 hover:bg-surface-3"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      )}
       {/* ProgressBar */}
       <div className="h-1 bg-surface-3 shrink-0">
-        <div 
-          className="h-full bg-accent transition-all duration-300 rounded-r-full shadow-[0_0_10px_var(--accent)]" 
-          style={{ width: `${Math.min(100, (typed.length / text.length) * 100)}%` }} 
+        <div
+          className="h-full bg-accent transition-all duration-300 rounded-r-full shadow-[0_0_10px_var(--accent)]"
+          style={{ width: `${Math.min(100, (typed.length / text.length) * 100)}%` }}
         />
       </div>
 
@@ -138,10 +189,14 @@ export default function TypingEngine({ engine, mode, onNewTest }: TypingEnginePr
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-px bg-border rounded-lg overflow-hidden mb-6 sm:mb-8">
+            <div className="grid grid-cols-4 gap-px bg-border rounded-lg overflow-hidden mb-6 sm:mb-8">
               <div className="bg-surface p-2 sm:p-4 flex flex-col items-center gap-1">
                 <div className="font-mono text-[24px] sm:text-[32px] font-normal text-ink tracking-[-0.02em]">{stats.wpm}</div>
-                <div className="font-mono text-[8px] sm:text-[9px] tracking-[0.1em] uppercase text-ink-3">WPM</div>
+                <div className="font-mono text-[8px] sm:text-[9px] tracking-[0.1em] uppercase text-ink-3">AVG WPM</div>
+              </div>
+              <div className="bg-surface p-2 sm:p-4 flex flex-col items-center gap-1">
+                <div className="font-mono text-[24px] sm:text-[32px] font-normal text-accent tracking-[-0.02em]">{stats.bestWpm}</div>
+                <div className="font-mono text-[8px] sm:text-[9px] tracking-[0.1em] uppercase text-accent/70">BEST WPM</div>
               </div>
               <div className="bg-surface p-2 sm:p-4 flex flex-col items-center gap-1">
                 <div className="font-mono text-[24px] sm:text-[32px] font-normal text-ink tracking-[-0.02em]">{stats.accuracy}%</div>
@@ -153,13 +208,71 @@ export default function TypingEngine({ engine, mode, onNewTest }: TypingEnginePr
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <button onClick={onNewTest} className="flex-1 bg-accent text-white font-bold text-[13px] py-2.5 rounded border border-accent hover:brightness-110 transition-colors shadow-sm">
-                New Test
-              </button>
-              <button onClick={() => resetTest(text)} className="flex-1 bg-surface-2 text-ink-2 font-medium text-[13px] py-2.5 rounded border border-border hover:bg-surface hover:text-ink transition-colors">
-                Retry
-              </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <button onClick={onNewTest} className="flex-1 bg-accent text-white font-bold text-[13px] py-2.5 rounded border border-accent hover:brightness-110 transition-colors shadow-sm">
+                  New Test
+                </button>
+                <button onClick={() => resetTest(text)} className="flex-1 bg-surface-2 text-ink-2 font-medium text-[13px] py-2.5 rounded border border-border hover:bg-surface hover:text-ink transition-colors">
+                  Retry
+                </button>
+              </div>
+              {weakKeys.length > 0 && onPrescriptionDrill && (
+                <div className="mt-4 p-4 rounded-xl bg-surface-2 border border-border">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] uppercase tracking-widest font-bold text-ink-3">Detailed Error Analysis</span>
+                      <span className="text-[11px] text-ink-4">Keys requiring focus based on this session</span>
+                    </div>
+                    <div className="flex gap-1.5">
+                      {Object.entries(errorMap).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([char, count]) => (
+                        <div key={char} className="flex flex-col items-center">
+                          <span className="w-6 h-6 rounded bg-error/10 border border-error/20 flex items-center justify-center text-[10px] font-mono font-bold text-error uppercase">
+                            {char === ' ' ? '␣' : char}
+                          </span>
+                          <span className="text-[8px] mt-0.5 text-error/60 font-bold">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mini Keyboard Visualization */}
+                  <div className="flex flex-col gap-1 mb-6 opacity-80">
+                    {[
+                      ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+                      ["a", "s", "d", "f", "g", "h", "j", "k", "l", ";"],
+                      ["z", "x", "c", "v", "b", "n", "m", ",", ".", "/"]
+                    ].map((row, rIdx) => (
+                      <div key={rIdx} className="flex justify-center gap-1">
+                        {row.map(key => {
+                          const errorCount = errorMap[key] || 0;
+                          const hasError = errorCount > 0;
+                          return (
+                            <div 
+                              key={key} 
+                              className={`w-4 h-4 rounded-[2px] border flex items-center justify-center text-[7px] font-mono transition-colors ${
+                                hasError 
+                                  ? "bg-error border-error-strong text-white" 
+                                  : "bg-surface-3 border-border text-ink-4"
+                              }`}
+                            >
+                              {key.toUpperCase()}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+
+                  <button 
+                    onClick={() => onPrescriptionDrill(weakKeys)}
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold text-[13px] py-3 rounded shadow-lg hover:brightness-110 transition-all group"
+                  >
+                    <Activity size={16} className="group-hover:animate-pulse" />
+                    Train These Keys
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

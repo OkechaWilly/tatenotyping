@@ -12,29 +12,32 @@ export default function TypingContainer() {
   const { duration, mode, difficulty } = useTypingContext();
   const { user } = useAuth();
   const [text, setText] = useState("");
+  const [rwCategory, setRwCategory] = useState("email");
   
   const generateText = useCallback(() => {
-    const data = TYPING_DATA[mode as keyof typeof TYPING_DATA] || TYPING_DATA.words;
     let newText = "";
     
     if (mode === "realworld") {
-      const proseData = TYPING_DATA.prose;
-      newText = proseData[Math.floor(Math.random() * proseData.length)];
-    } else if (mode === "words" || mode === "numbers") {
+      const rwData = TYPING_DATA.realworld;
+      const pool = rwData[rwCategory as keyof typeof rwData];
+      newText = pool[Math.floor(Math.random() * pool.length)];
+    } else if (mode === "words" || mode === "numbers" || mode === "punctuation" || mode === "symbols") {
+      const data = (TYPING_DATA[mode as keyof typeof TYPING_DATA] || TYPING_DATA.symbols) as string[];
       newText = [...data].sort(() => Math.random() - 0.5).slice(0, 25).join(" ");
     } else {
+      const data = (TYPING_DATA[mode as keyof typeof TYPING_DATA] || TYPING_DATA.words) as string[];
       newText = data[Math.floor(Math.random() * data.length)];
     }
     
     setText(newText);
-  }, [mode]);
+  }, [mode, rwCategory]);
   
   // Optimize text selection and load instantly
   useEffect(() => {
     generateText();
   }, [generateText]);
 
-  const handleSessionComplete = useCallback(async (stats: TypingStats) => {
+  const handleSessionComplete = useCallback(async (stats: TypingStats, keyStats: Record<string, { attempts: number; errors: number }>) => {
     if (!user) return; 
     
     const { saveSession } = await import("@/lib/supabase/sessions");
@@ -44,8 +47,27 @@ export default function TypingContainer() {
       mode,
       duration,
       textUsed: text,
+      keyStats,
     });
   }, [user, mode, duration, text]);
+
+  const handlePrescriptionDrill = useCallback((weakKeys: string[]) => {
+    const data = TYPING_DATA.words;
+    const drillWords = [];
+    for (let i = 0; i < 25; i++) {
+      const useWeakKey = Math.random() > 0.3; 
+      if (useWeakKey && weakKeys.length > 0) {
+        const targetKey = weakKeys[Math.floor(Math.random() * weakKeys.length)];
+        const matchingWords = data.filter(w => w.toLowerCase().includes(targetKey.toLowerCase()));
+        if (matchingWords.length > 0) {
+          drillWords.push(matchingWords[Math.floor(Math.random() * matchingWords.length)]);
+          continue;
+        }
+      }
+      drillWords.push(data[Math.floor(Math.random() * data.length)]);
+    }
+    setText(drillWords.join(" "));
+  }, []);
 
   const engine = useTypingEngine(text, duration, difficulty, handleSessionComplete);
   const { resetTest } = engine;
@@ -68,7 +90,14 @@ export default function TypingContainer() {
         totalTime={duration}
       />
       <div className="flex-1 overflow-hidden">
-        <TypingEngine engine={engine} mode={mode} onNewTest={generateText} />
+        <TypingEngine 
+          engine={engine} 
+          mode={mode} 
+          onNewTest={generateText} 
+          onPrescriptionDrill={handlePrescriptionDrill}
+          rwCategory={rwCategory}
+          onRwCategoryChange={setRwCategory}
+        />
       </div>
     </main>
   );

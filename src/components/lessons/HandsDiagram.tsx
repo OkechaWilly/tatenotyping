@@ -7,17 +7,23 @@ interface HandsDiagramProps {
 export default function HandsDiagram({ activeKey }: HandsDiagramProps) {
   const k = activeKey?.toLowerCase();
 
-  const isPinkyL = k === "a";
-  const isRingL = k === "s";
-  const isMiddleL = k === "d";
-  const isIndexL = k === "f";
+  const isPinkyL = ["1", "q", "a", "z"].includes(k);
+  const isRingL = ["2", "w", "s", "x"].includes(k);
+  const isMiddleL = ["3", "e", "d", "c"].includes(k);
+  const isIndexL = ["4", "5", "r", "t", "f", "g", "v", "b"].includes(k);
   const isThumbL = k === " ";
 
-  const isPinkyR = k === ";";
-  const isRingR = k === "l";
-  const isMiddleR = k === "k";
-  const isIndexR = k === "j";
+  const isPinkyR = ["0", "p", ";", "/", "-", "=", "[", "]", "'"].includes(k);
+  const isRingR = ["9", "o", "l", "."].includes(k);
+  const isMiddleR = ["8", "i", "k", ","].includes(k);
+  const isIndexR = ["6", "7", "y", "u", "h", "j", "n", "m"].includes(k);
   const isThumbR = k === " ";
+
+  const isShift = k === "shift";
+  if (isShift) {
+    // Both pinkies highlight for shift
+    // Or we could be specific, but for simplicity:
+  }
 
   const fingerBaseClass = "flex flex-col items-center gap-0.5";
   const getBodyColor = (active: boolean, color: string) => active ? color : "bg-[#D4CFC8]";

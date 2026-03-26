@@ -7,6 +7,8 @@ export default function Sidebar() {
 
   const modes = [
     { id: "words", name: "Words", sub: "Common vocab", icon: "Aa", iconStyle: "text-[13px]" },
+    { id: "punctuation", name: "Punctuation", sub: "Basic marks", icon: ".,", iconStyle: "text-[11px]" },
+    { id: "symbols", name: "Symbols", sub: "Special chars", icon: "#@", iconStyle: "text-[11px]" },
     { id: "quotes", name: "Quotes", sub: "Literature", icon: "❝", iconStyle: "text-[11px]" },
     { id: "code", name: "Code", sub: "Syntax focused", icon: "{}", iconStyle: "text-[11px]" },
     { id: "prose", name: "Prose", sub: "Long form", icon: "¶", iconStyle: "text-[10px]" },

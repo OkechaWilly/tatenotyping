@@ -12,6 +12,7 @@ interface Profile {
   xp: number;
   streak_current: number;
   streak_best: number;
+  preferences?: Record<string, unknown>;
   created_at: string;
 }
 

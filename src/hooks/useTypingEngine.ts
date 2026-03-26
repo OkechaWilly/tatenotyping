@@ -5,6 +5,7 @@ export interface TypingStats {
   rawWpm: number;
   accuracy: number;
   errors: number;
+  bestWpm: number;
 }
 
 export type Difficulty = "Beginner" | "Intermediate" | "Advanced";
@@ -13,7 +14,7 @@ export function useTypingEngine(
   initialText: string, 
   totalTime: number, 
   difficulty: Difficulty = "Intermediate",
-  onComplete?: (stats: TypingStats) => void
+  onComplete?: (stats: TypingStats, keyStats: Record<string, { attempts: number; errors: number }>) => void
 ) {
   const [text, setText] = useState(initialText);
   const [typed, setTyped] = useState("");
@@ -25,8 +26,18 @@ export function useTypingEngine(
   const [errors, setErrors] = useState(0);
   const [totalKeystrokes, setTotalKeystrokes] = useState(0);
 
+  // Advanced tracking
+  const [bestWpm, setBestWpm] = useState(0);
+  const [, setWpmHistory] = useState<{ time: number; chars: number }[]>([]);
+  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
+  const [, setBackspaceCount] = useState(0);
+  const [notifications, setNotifications] = useState<{ id: string; message: string; type: string }[]>([]);
+  const [, setShiftMistakeCount] = useState(0);
+  const [errorMap, setErrorMap] = useState<Record<string, number>>({});
+
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const wpmIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Derived stats
   const timeElapsed = startTimeRef.current ? (Date.now() - startTimeRef.current) / 1000 : 0;
@@ -47,8 +58,17 @@ export function useTypingEngine(
       accuracy = Math.max(0, Math.round((correctKeystrokes / totalKeystrokes) * 100));
     }
 
-    return { wpm, rawWpm, accuracy, errors };
-  }, [typed, text, minutesElapsed, totalKeystrokes, errors]);
+    return { wpm, rawWpm, accuracy, errors, bestWpm };
+  }, [typed, text, minutesElapsed, totalKeystrokes, errors, bestWpm]);
+
+  // Toast notification logic
+  const addNotification = useCallback((message: string, type: string) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setNotifications(prev => [...prev.filter(n => n.message !== message), { id, message, type }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 3000);
+  }, []);
 
   // Per-key tracking
   const [keyStats, setKeyStats] = useState<Record<string, { attempts: number; errors: number }>>({});
@@ -57,10 +77,10 @@ export function useTypingEngine(
 
   useEffect(() => {
     if (isFinished && !hasCompleted && onComplete) {
-      onComplete(stats);
+      onComplete(stats, keyStats);
       setHasCompleted(true);
     }
-  }, [isFinished, hasCompleted, onComplete, stats]);
+  }, [isFinished, hasCompleted, onComplete, stats, keyStats]);
 
   const startTest = useCallback(() => {
     setIsActive(true);
@@ -80,7 +100,15 @@ export function useTypingEngine(
     setErrors(0);
     setTotalKeystrokes(0);
     setKeyStats({});
+    setBestWpm(0);
+    setWpmHistory([]);
+    setConsecutiveErrors(0);
+    setBackspaceCount(0);
+    setShiftMistakeCount(0);
+    setErrorMap({});
+    setNotifications([]);
     if (timerRef.current) clearInterval(timerRef.current);
+    if (wpmIntervalRef.current) clearInterval(wpmIntervalRef.current);
   }, [totalTime]);
 
   // Handle typing input
@@ -109,26 +137,68 @@ export function useTypingEngine(
 
       if (charTyped !== charExpected) {
         setErrors((prev) => prev + 1);
+        setConsecutiveErrors(prev => prev + 1);
+
+        // Smart Error Detection
+        // 1. CapsLock detection
+        // 1. CapsLock detection
+        if (charTyped.toLowerCase() === charExpected && charTyped !== charExpected) {
+          addNotification("CapsLock is on — press it again to turn it off", "warning");
+        }
+
+        // Track per-character errors
+        setErrorMap(prev => ({
+          ...prev,
+          [charExpected]: (prev[charExpected] || 0) + 1
+        }));
+
+        // 2. Shift key reminder
+        const isUpper = charExpected !== charExpected.toLowerCase();
+        if (isUpper && charTyped === charExpected.toLowerCase()) {
+          setShiftMistakeCount(prev => {
+            if (prev + 1 >= 2) {
+              addNotification("Use Shift for capitals, not CapsLock", "info");
+              return 0;
+            }
+            return prev + 1;
+          });
+        }
+
+        // 3. Home row reminder
+        if (consecutiveErrors + 1 >= 3) {
+          addNotification("Take a breath. Return your fingers to A S D F · J K L ;", "info");
+          setConsecutiveErrors(0);
+        }
         
         if (difficulty === "Advanced") {
           setIsFinished(true);
           setIsActive(false);
           if (timerRef.current) clearInterval(timerRef.current);
+          if (wpmIntervalRef.current) clearInterval(wpmIntervalRef.current);
           setTyped(val);
           return;
         }
 
         if (difficulty === "Intermediate") {
-          // In intermediate, we don't update typed if it's wrong (must correct)
           setTotalKeystrokes((prev) => prev + 1);
           return;
         }
+      } else {
+        setConsecutiveErrors(0);
+        setShiftMistakeCount(0);
       }
 
       setTyped(val);
       setTotalKeystrokes((prev) => prev + 1);
     } else {
         // Handle backspace
+        setBackspaceCount(prev => {
+          const next = prev + 1;
+          if (next === 9) {
+            addNotification("Try to flow forward — fix errors with rhythm, not constant backspacing", "warning");
+          }
+          return next;
+        });
         setTyped(val);
     }
 
@@ -137,51 +207,98 @@ export function useTypingEngine(
        setIsFinished(true);
        setIsActive(false);
        if (timerRef.current) clearInterval(timerRef.current);
+       if (wpmIntervalRef.current) clearInterval(wpmIntervalRef.current);
     }
 
-  }, [isActive, isFinished, text, typed, startTest, difficulty]);
+  }, [isActive, isFinished, text, typed, startTest, difficulty, addNotification, consecutiveErrors]);
 
-  // Timer effect
+  // Timer & Best WPM effect
   useEffect(() => {
-    if (isActive && !isFinished && totalTime > 0) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            setIsFinished(true);
-            setIsActive(false);
-            clearInterval(timerRef.current!);
-            return 0;
+    if (isActive && !isFinished) {
+      // 5-second window WPM tracking
+      wpmIntervalRef.current = setInterval(() => {
+        const now = Date.now();
+        const currentChars = typed.length;
+        
+        setWpmHistory(prev => {
+          const newHistory = [...prev, { time: now, chars: currentChars }];
+          // Only keep last 5 seconds (5000ms)
+          const windowStart = now - 5000;
+          const relevantHistory = newHistory.filter(h => h.time >= windowStart);
+          
+          if (relevantHistory.length > 1) {
+            const first = relevantHistory[0];
+            const last = relevantHistory[relevantHistory.length - 1];
+            const timeDiffMin = (last.time - first.time) / 60000;
+            const charDiff = last.chars - first.chars;
+            
+            if (timeDiffMin > 0) {
+              const windowWpm = Math.round((charDiff / 5) / timeDiffMin);
+              setBestWpm(prevBest => Math.max(prevBest, windowWpm));
+            }
           }
-          return prev - 1;
+          return relevantHistory;
         });
       }, 1000);
+
+      if (totalTime > 0) {
+        timerRef.current = setInterval(() => {
+          setTimeLeft((prev) => {
+            if (prev <= 1) {
+              setIsFinished(true);
+              setIsActive(false);
+              clearInterval(timerRef.current!);
+              clearInterval(wpmIntervalRef.current!);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      }
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (wpmIntervalRef.current) clearInterval(wpmIntervalRef.current);
     };
-  }, [isActive, isFinished, totalTime]);
+  }, [isActive, isFinished, totalTime, typed.length]);
 
   // Keep focus on click anywhere if active
   const focusInput = useCallback(() => {
     if (inputRef.current) inputRef.current.focus();
   }, []);
 
-  // Stabilize the return object
-  return useMemo(() => ({
-    text,
-    typed,
-    isActive,
-    isFinished,
-    timeLeft,
-    stats,
-    keyStats,
-    inputRef,
-    handleInput,
-    startTest,
-    resetTest,
-    focusInput,
-    difficulty,
-  }), [
+  // Final exposed object
+  return useMemo(() => {
+    const sortedStats = Object.entries(keyStats)
+      .map(([key, { attempts, errors }]) => ({
+        key,
+        errorRate: errors / attempts,
+        attempts
+      }))
+      .filter(k => k.attempts > 2) // Minimum attempts to be considered a weak key
+      .sort((a, b) => b.errorRate - a.errorRate);
+
+    const weakKeys = sortedStats.slice(0, 3).map(s => s.key);
+
+    return {
+      text,
+      typed,
+      isActive,
+      isFinished,
+      timeLeft,
+      stats,
+      keyStats,
+      weakKeys,
+      notifications,
+      errorMap,
+      inputRef,
+      handleInput,
+      startTest,
+      resetTest,
+      focusInput,
+      difficulty,
+    };
+  }, [
     text, 
     typed, 
     isActive, 
@@ -189,6 +306,8 @@ export function useTypingEngine(
     timeLeft, 
     stats, 
     keyStats, 
+    notifications,
+    errorMap,
     handleInput, 
     startTest, 
     resetTest, 

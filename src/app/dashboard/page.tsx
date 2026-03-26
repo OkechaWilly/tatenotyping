@@ -1,8 +1,8 @@
 import AppLayout from "@/components/layout/AppLayout";
 import ProfileHero from "@/components/dashboard/ProfileHero";
 import KPICards from "@/components/dashboard/KPICards";
-import WPMChart from "@/components/dashboard/WPMChart";
-import AccuracyTrend from "@/components/dashboard/AccuracyTrend";
+import ProgressChart from "@/components/dashboard/ProgressChart";
+import LetterPerformance from "@/components/dashboard/LetterPerformance";
 import ActivityCalendar from "@/components/dashboard/ActivityCalendar";
 import SkillBreakdown from "@/components/dashboard/SkillBreakdown";
 import SessionsTable from "@/components/dashboard/SessionsTable";
@@ -17,9 +17,12 @@ export default function DashboardPage() {
           <ProfileHero />
           <KPICards />
           
-          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-5 animate-fadeUp" style={{ animationDelay: "0.2s" }}>
-            <WPMChart />
-            <AccuracyTrend />
+          <div className="animate-fadeUp" style={{ animationDelay: "0.2s" }}>
+            <ProgressChart />
+          </div>
+
+          <div className="animate-fadeUp" style={{ animationDelay: "0.22s" }}>
+            <LetterPerformance />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 animate-fadeUp" style={{ animationDelay: "0.14s" }}>

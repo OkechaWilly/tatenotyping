@@ -5,89 +5,82 @@ export interface Lesson {
   description: string;
   text: string;
   keys: string[];
+  displayMode?: "linear" | "wordgrid";
 }
 
 export const LESSONS: Lesson[] = [
   // BEGINNER
   {
-    id: "home-row-left",
-    title: "Home Row - Left Hand",
+    id: "lesson-1",
+    title: "Home Row Basics",
     category: "Beginner",
-    description: "Focus on your left hand fingers: A S D F.",
-    text: "aaaa ssss dddd ffff asdf fdsa asdf fdsa",
-    keys: ["a", "s", "d", "f"]
+    description: "The foundation of touch typing: A S D F and J K L ;.",
+    text: "asdf jkl; asdf jkl; fdsa ;lkj asdf jkl; ads jks",
+    keys: ["a", "s", "d", "f", "j", "k", "l", ";"],
+    displayMode: "linear"
   },
   {
-    id: "home-row-right",
-    title: "Home Row - Right Hand",
+    id: "lesson-2",
+    title: "E and I - Top Row Reach",
     category: "Beginner",
-    description: "Focus on your right hand fingers: J K L ;.",
-    text: "jjjj kkkk llll ;;;; jkl; ;lkj jkl; ;lkj",
-    keys: ["j", "k", "l", ";"]
+    description: "Master your first vertical reach with your middle fingers.",
+    text: "ded ded did did eke eke fie fie deal idle fell like eel isle deli elk",
+    keys: ["e", "i"],
+    displayMode: "wordgrid"
   },
   {
-    id: "home-row-both",
-    title: "Home Row - Both Hands",
+    id: "lesson-3",
+    title: "H and G - Center Reach",
     category: "Beginner",
-    description: "Combining both hands on the home row.",
-    text: "fff jjj ddd kkk sss lll aaa ;;; fj dk sl a;",
-    keys: ["a", "s", "d", "f", "j", "k", "l", ";"]
+    description: "Reaching to the center with your index fingers.",
+    text: "jjh jjh fgf fgf had had gag gag shall gash flag has glad half shelf",
+    keys: ["h", "g"],
+    displayMode: "wordgrid"
   },
   {
-    id: "home-row-words",
-    title: "Home Row Words",
+    id: "lesson-4",
+    title: "Full Top Row",
     category: "Beginner",
-    description: "Easy words using only home row keys.",
-    text: "sad fad lad dad alas flask falls salad glass",
-    keys: ["a", "s", "d", "f", "j", "k", "l", ";"]
+    description: "Navigating the entire top row from Q to P.",
+    text: "qua war err try you our put top row quit wrap rout pour tower",
+    keys: ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+    displayMode: "wordgrid"
   },
   {
-    id: "top-row-q-p",
-    title: "Top Row - Q and P",
+    id: "lesson-5",
+    title: "Full Bottom Row",
     category: "Beginner",
-    description: "Reaching for the edges: Q and P.",
-    text: "qqqq pppp aqaq ;p;p quip quip pipe pipe",
-    keys: ["q", "p", "a", ";", "u", "i"]
+    description: "Navigating the entire bottom row from Z to M.",
+    text: "zap axe can van ban man cab nab zinc vex mix box vim zone calm",
+    keys: ["z", "x", "c", "v", "b", "n", "m"],
+    displayMode: "wordgrid"
   },
   {
-    id: "bottom-row-z-x",
-    title: "Bottom Row - Z and X",
+    id: "lesson-6",
+    title: "Number Row",
     category: "Beginner",
-    description: "Introducing Z and X.",
-    text: "zzzz xxxx azaz sxsx zone zone taxi taxi",
-    keys: ["z", "x", "a", "s"]
+    description: "Learning the numeric row for data entry.",
+    text: "11 22 33 44 55 66 77 88 99 00 123 456 789 2024 1984 360 100",
+    keys: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+    displayMode: "wordgrid"
   },
   {
-    id: "bottom-row-c-n",
-    title: "Bottom Row - C and N",
-    category: "Beginner",
-    description: "Introducing C and N.",
-    text: "cccc nnnn dcdc jnjn cake cake none none",
-    keys: ["c", "n", "d", "j"]
+    id: "lesson-7",
+    title: "Punctuation and Shift",
+    category: "Intermediate",
+    description: "Mastering capitalization and basic punctuation marks.",
+    text: "dog, cat. run! did you? yes, I did. it's fine. she's here. well, okay.",
+    keys: [".", ",", "!", "?", "'", "shift"],
+    displayMode: "wordgrid"
   },
   {
-    id: "top-row-e-i",
-    title: "Top Row - E and I",
-    category: "Beginner",
-    description: "Introducing the top row with E and I.",
-    text: "eeee iiii eded ikik deed diid side kids",
-    keys: ["e", "i", "a", "s", "d", "f", "j", "k", "l", ";"]
-  },
-  {
-    id: "top-row-r-u",
-    title: "Top Row - R and U",
-    category: "Beginner",
-    description: "Introducing R and U.",
-    text: "rrrr uuuu frfr juju rude sure user lure",
-    keys: ["r", "u", "e", "i", "a", "s", "d", "f", "j", "k", "l", ";"]
-  },
-  {
-    id: "bottom-row-v-m",
-    title: "Bottom Row - V and M",
-    category: "Beginner",
-    description: "Moving down to V and M.",
-    text: "vvvv mmmm fvfv jmjm move view move view",
-    keys: ["v", "m", "r", "u", "e", "i", "a", "s", "d", "f", "j", "k", "l", ";"]
+    id: "lesson-8",
+    title: "Speed Drill: Full Keyboard",
+    category: "Intermediate",
+    description: "A 60-second timed challenge across all keys to test your mastery.",
+    text: "The quick brown fox jumps over a lazy dog. Practice makes perfect. Keep pushing your speed while maintaining accuracy. Every keystroke counts toward your progress.",
+    keys: [], // Full keyboard
+    displayMode: "linear"
   },
 
   // INTERMEDIATE

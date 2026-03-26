@@ -6,10 +6,22 @@ import { useTypingEngine } from "@/hooks/useTypingEngine";
 import { LESSONS } from "@/data/lessons";
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { Zap, CheckCircle, ChevronLeft } from "lucide-react";
 
-export default function LessonEngine() {
+interface LessonEngineProps {
+  initialLessonId?: string;
+  onBack: () => void;
+}
+
+export default function LessonEngine({ initialLessonId, onBack }: LessonEngineProps) {
   const { user } = useAuth();
-  const [lessonIndex, setLessonIndex] = useState(0);
+  const [lessonIndex, setLessonIndex] = useState(() => {
+    if (initialLessonId) {
+      const idx = LESSONS.findIndex(l => l.id === initialLessonId);
+      return idx !== -1 ? idx : 0;
+    }
+    return 0;
+  });
   const currentLesson = LESSONS[lessonIndex];
   const [mounted, setMounted] = useState(false);
   const [passed, setPassed] = useState(false);
@@ -19,9 +31,8 @@ export default function LessonEngine() {
   const [selectedCategory, setSelectedCategory] = useState<string>("Beginner");
 
   const filteredLessons = LESSONS.filter(l => l.category === selectedCategory);
-  const currentLessonInFiltered = filteredLessons.findIndex(l => l.id === currentLesson.id);
 
-  const handleLessonComplete = useCallback(async (stats: { wpm: number; accuracy: number; errors: number; rawWpm: number }) => {
+  const handleLessonComplete = useCallback(async (stats: { wpm: number; accuracy: number; errors: number; rawWpm: number; bestWpm: number }, keyStats: Record<string, { attempts: number; errors: number }>) => {
     const isSuccess = stats.accuracy >= 90;
     setPassed(isSuccess);
 
@@ -40,6 +51,15 @@ export default function LessonEngine() {
       completed_at: new Date().toISOString(),
     }, { onConflict: 'user_id,lesson_id' });
 
+    // Save 'full-keyboard' achievement if Lesson 8 is passed
+    if (currentLesson.id === "lesson-8" && isSuccess) {
+      await supabase.from("achievements").upsert({
+        user_id: user.id,
+        achievement_key: "full-keyboard",
+        unlocked_at: new Date().toISOString()
+      }, { onConflict: 'user_id,achievement_key' });
+    }
+
     // Save session
     const { saveSession } = await import("@/lib/supabase/sessions");
     await saveSession({
@@ -48,6 +68,7 @@ export default function LessonEngine() {
       mode: "lesson",
       duration: 0,
       textUsed: drillMode ? drillText : currentLesson.text,
+      keyStats,
     });
   }, [user, currentLesson, drillMode, drillText]);
 
@@ -105,27 +126,37 @@ export default function LessonEngine() {
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-bg relative">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-8 py-3 sm:py-3 border-b border-border bg-surface shrink-0 gap-3">
-        <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => {
-                setSelectedCategory(cat);
-                const firstInCat = LESSONS.findIndex(l => l.category === cat);
-                setLessonIndex(firstInCat);
-              }}
-              className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${selectedCategory === cat
-                ? "bg-accent text-white border-accent shadow-sm shadow-accent/20"
-                : "bg-surface-2 text-ink-3 border-border hover:border-ink-4 hover:text-ink-2"
-                }`}
-            >
-              {cat}
-            </button>
-          ))}
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={onBack}
+            className="flex items-center gap-2 text-ink-3 hover:text-accent transition-colors group"
+          >
+            <ChevronLeft size={18} className="group-hover:-translate-x-0.5 transition-transform" />
+            <span className="font-mono text-[10px] uppercase tracking-widest font-bold">Lessons</span>
+          </button>
+          <div className="h-4 w-px bg-border hidden sm:block" />
+          <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => {
+                  setSelectedCategory(cat);
+                  const firstInCat = LESSONS.findIndex(l => l.category === cat);
+                  setLessonIndex(firstInCat);
+                }}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${selectedCategory === cat
+                  ? "bg-accent text-white border-accent shadow-sm shadow-accent/20"
+                  : "bg-surface-2 text-ink-3 border-border hover:border-ink-4 hover:text-ink-2"
+                  }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex gap-1 shrink-0 bg-surface-2 p-1 rounded-lg">
-          {filteredLessons.map((lesson, i) => (
+          {filteredLessons.map((lesson) => (
             <div
               key={lesson.id}
               onClick={() => setLessonIndex(LESSONS.findIndex(l => l.id === lesson.id))}
@@ -157,21 +188,72 @@ export default function LessonEngine() {
         <div className="bg-surface border border-border rounded-lg px-6 sm:px-8 py-8 sm:py-10 w-full max-w-[680px] shadow-sm relative cursor-text group">
           <div className={`absolute left-0 top-0 bottom-0 w-[4px] bg-accent rounded-l-lg transition-opacity ${isActive ? 'opacity-100' : 'opacity-0'}`} />
 
-          <div className="font-mono text-[18px] sm:text-[22px] leading-[1.8] sm:leading-[2] tracking-[0.04em] sm:tracking-[0.06em] text-pending select-none break-words text-center">
-            {text.split('').map((char, i) => {
-              let charClass = "relative transition-all duration-75 ";
-              if (i < typed.length) {
-                charClass += typed[i] === char ? "text-ink " : "text-error bg-error/10 rounded-[2px] ";
-              }
-              if (i === typed.length && isActive) charClass += "text-ink border-b-2 border-accent animate-pulse";
+          {currentLesson.id === "lesson-8" && !isFinished && (
+            <div className="absolute -top-3 right-6 z-10 animate-bounce">
+              <div className="bg-gradient-to-r from-accent to-accent-light text-white px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-xl shadow-accent/20 border border-white/20 flex items-center gap-1.5">
+                <Zap size={12} fill="currentColor" />
+                Full Keyboard Mode
+              </div>
+            </div>
+          )}
 
-              return (
-                <span key={i} className={charClass}>
-                  {char === ' ' ? '\u00A0' : char}
-                </span>
-              );
-            })}
-          </div>
+          {currentLesson.displayMode === "wordgrid" && !drillMode ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {text.split(" ").map((word, wIdx) => {
+                const typedWords = typed.split(" ");
+                const currentWordIdx = typedWords.length - 1;
+                const isCurrent = wIdx === currentWordIdx;
+                const isTyped = wIdx < currentWordIdx;
+                const isCorrect = isTyped && typedWords[wIdx] === word;
+                const isError = isTyped && typedWords[wIdx] !== word;
+
+                let boxClass = "px-4 py-3 rounded-xl border-2 transition-all duration-300 text-center font-mono text-lg relative overflow-hidden ";
+                if (isCurrent && isActive) {
+                  boxClass += "border-accent bg-accent/5 ring-4 ring-accent/10 shadow-[0_0_20px_rgba(196,67,26,0.15)] text-ink scale-[1.02] z-10 ";
+                } else if (isCorrect) {
+                  boxClass += "border-green/20 bg-green/5 text-green/80 ";
+                } else if (isError) {
+                  boxClass += "border-error/20 bg-error/5 text-error/80 ";
+                } else {
+                  boxClass += "border-border bg-surface-2 text-ink-4 opacity-40 ";
+                }
+
+                return (
+                  <div key={wIdx} className={boxClass}>
+                    {/* Progress bar for active word */}
+                    {isCurrent && isActive && (
+                      <div 
+                        className="absolute bottom-0 left-0 h-1 bg-accent/30 transition-all duration-150" 
+                        style={{ width: `${Math.min(100, (typedWords[wIdx]?.length / word.length) * 100)}%` }} 
+                      />
+                    )}
+                    {word}
+                    {isCorrect && (
+                      <div className="absolute top-1 right-2">
+                         <CheckCircle size={10} className="text-green opacity-50" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="font-mono text-[18px] sm:text-[22px] leading-[1.8] sm:leading-[2] tracking-[0.04em] sm:tracking-[0.06em] text-pending select-none break-words text-center">
+              {text.split('').map((char, i) => {
+                let charClass = "relative transition-all duration-75 ";
+                if (i < typed.length) {
+                  charClass += typed[i] === char ? "text-ink " : "text-error bg-error/10 rounded-[2px] ";
+                }
+                if (i === typed.length && isActive) charClass += "text-ink border-b-2 border-accent animate-pulse shadow-[0_4px_12px_var(--accent)]";
+
+                return (
+                  <span key={i} className={charClass}>
+                    {char === ' ' ? '\u00A0' : char}
+                  </span>
+                );
+              })}
+            </div>
+          )}
 
           <input
             ref={inputRef}
