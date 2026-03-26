@@ -1,10 +1,12 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
-import { Trophy, Users, Gauge, Target, Flag, Play, Car, Award } from "lucide-react";
+import { Trophy, Users, Flag, Play, Car, Award } from "lucide-react";
 import { useTypingEngine } from "@/hooks/useTypingEngine";
 
 interface LeaderboardEntry {
@@ -57,7 +59,14 @@ export default function CompetePage() {
 
       const { data, error } = await query;
       if (!error && data) {
-        setLeaderboard(data as any);
+        const formatted = (data as unknown[]).map(item => {
+          const entry = item as Record<string, unknown>;
+          return {
+            ...entry,
+            profiles: Array.isArray(entry.profiles) ? entry.profiles[0] : entry.profiles
+          } as LeaderboardEntry;
+        });
+        setLeaderboard(formatted);
       }
       setLoading(false);
     }
@@ -104,7 +113,7 @@ export default function CompetePage() {
                     <div className="flex flex-col gap-1">
                       <h3 className="text-xl font-bold text-ink tracking-tight">Rapid Sprint</h3>
                       <p className="text-ink-3 text-[13px] max-w-[320px]">
-                        The ultimate test of focus. Race against your personal best "ghost car".
+                        The ultimate test of focus. Race against your personal best &quot;ghost car&quot;.
                       </p>
                     </div>
                   </div>

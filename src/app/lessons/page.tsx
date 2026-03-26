@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import AppLayout from "@/components/layout/AppLayout";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 import { LESSONS } from "@/data/lessons";
 import LessonCard from "@/components/lessons/LessonCard";
 import LessonEngine from "@/components/lessons/LessonEngine";
-import { BookOpen, Award, Target, HelpCircle, ChevronRight } from "lucide-react";
+import { BookOpen, HelpCircle, ChevronRight } from "lucide-react";
 
 interface LessonProgress {
   lesson_id: string;
@@ -17,17 +18,13 @@ interface LessonProgress {
 }
 
 export default function LessonsPage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user } = useAuth();
   const [progress, setProgress] = useState<Record<string, LessonProgress>>({});
-  const [loading, setLoading] = useState(true);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchProgress() {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+      if (!user) return;
 
       const supabase = createClient();
       const { data, error } = await supabase
@@ -42,13 +39,10 @@ export default function LessonsPage() {
         }, {} as Record<string, LessonProgress>);
         setProgress(progressMap);
       }
-      setLoading(false);
     }
 
-    if (!authLoading) {
-      fetchProgress();
-    }
-  }, [user, authLoading]);
+    fetchProgress();
+  }, [user]);
 
   if (selectedLessonId) {
     return (
@@ -149,10 +143,10 @@ export default function LessonsPage() {
                 </p>
               </div>
             </div>
-            <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-ink text-white font-bold text-[13px] hover:bg-ink-1 transition-all group">
+            <Link href="/lessons/reference" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-ink text-white font-bold text-[13px] hover:bg-ink/90 transition-all group shadow-lg shadow-ink/10">
               View Reference Guide
               <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-            </button>
+            </Link>
           </div>
         </div>
       </div>

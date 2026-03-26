@@ -20,6 +20,8 @@ export const metadata: Metadata = {
 };
 
 import { AuthProvider } from "@/context/AuthContext";
+import { TypingProvider } from "@/context/TypingContext";
+import { Suspense } from "react";
 
 export default function RootLayout({
   children,
@@ -30,7 +32,11 @@ export default function RootLayout({
     <html lang="en" className={`${firaSans.variable} ${firaCode.variable} font-body`}>
       <body className="bg-bg text-ink min-h-screen flex flex-col antialiased">
         <AuthProvider>
-          {children}
+          <Suspense fallback={null}>
+            <TypingProvider>
+              {children}
+            </TypingProvider>
+          </Suspense>
         </AuthProvider>
       </body>
     </html>

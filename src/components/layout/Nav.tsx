@@ -13,9 +13,10 @@ export default function Nav() {
   const links = [
     { name: "Practice", href: "/type" },
     { name: "Lessons", href: "/lessons" },
-    { name: "Real-World", href: "/type?mode=realworld" },
     { name: "Dashboard", href: "/dashboard" },
+    { name: "Profile", href: "/profile" },
     { name: "Compete", href: "/compete" },
+    { name: "Settings", href: "/settings" },
   ];
 
   const { user, signOut, isLoading } = useAuth();

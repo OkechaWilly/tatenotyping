@@ -1,20 +1,18 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import AppLayout from "@/components/layout/AppLayout";
 import { useAuth } from "@/context/AuthContext";
 import { useTypingContext } from "@/context/TypingContext";
 import { 
   Settings, 
-  User, 
-  Bell, 
   Volume2, 
   Zap, 
   Monitor, 
   Moon, 
   Sun,
-  Shield,
   LogOut,
-  ChevronRight,
   Check,
   Layout
 } from "lucide-react";
@@ -122,7 +120,7 @@ export default function SettingsPage() {
                   ].map((t) => (
                     <button 
                       key={t.id}
-                      onClick={() => handleThemeChange(t.id as any)}
+                      onClick={() => handleThemeChange(t.id as 'light' | 'dark' | 'system')}
                       className={`flex flex-col items-center gap-3 p-6 rounded-2xl border transition-all ${
                         settings.theme === t.id 
                           ? "bg-accent/5 border-accent text-accent ring-1 ring-accent/20" 
@@ -144,7 +142,14 @@ export default function SettingsPage() {
   );
 }
 
-function SettingItem({ icon, title, description, active, onToggle, last }: any) {
+function SettingItem({ icon, title, description, active, onToggle, last }: { 
+  icon: React.ReactNode; 
+  title: string; 
+  description: string; 
+  active: boolean; 
+  onToggle: () => void; 
+  last?: boolean; 
+}) {
   return (
     <div className={`p-6 flex items-center justify-between transition-colors hover:bg-surface-2/50 ${!last ? 'border-b border-border' : ''}`}>
       <div className="flex items-center gap-5">
