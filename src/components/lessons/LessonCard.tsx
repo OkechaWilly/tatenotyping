@@ -38,7 +38,7 @@ export default function LessonCard({ lesson, progress, isLocked, isActive, onSel
           : progress?.completed 
             ? "bg-green/10 text-green" 
             : isActive 
-              ? "bg-accent text-white" 
+              ? "bg-accent text-bg" 
               : "bg-surface-2 text-ink-3"
       }`}>
         {isLocked ? <Lock size={14} /> : progress?.completed ? <CheckCircle2 size={16} /> : <Play size={14} fill="currentColor" />}
@@ -89,7 +89,7 @@ export default function LessonCard({ lesson, progress, isLocked, isActive, onSel
         )}
 
         {isActive && !progress?.completed && (
-          <div className="mt-4 flex items-center justify-center bg-accent text-white py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest shadow-lg shadow-accent/20 animate-pulse">
+          <div className="mt-4 flex items-center justify-center bg-accent text-bg py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest shadow-lg shadow-accent/20 animate-pulse">
             Continue Journey
           </div>
         )}
@@ -97,7 +97,7 @@ export default function LessonCard({ lesson, progress, isLocked, isActive, onSel
 
       {isLocked && (
         <div className="absolute inset-0 bg-surface-2/40 backdrop-blur-[1px] rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="bg-ink-2 text-white px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
+          <div className="bg-ink-2 text-bg px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
             Complete previous lesson
           </div>
         </div>

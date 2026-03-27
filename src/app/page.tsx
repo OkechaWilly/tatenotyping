@@ -125,7 +125,7 @@ export default function Home() {
       <footer className="py-12 border-t border-border mt-auto">
         <div className="max-w-screen-xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded bg-ink flex items-center justify-center text-white font-display font-bold text-lg italic">T</div>
+            <div className="w-8 h-8 rounded bg-ink flex items-center justify-center text-bg font-display font-bold text-lg italic">T</div>
             <span className="font-display font-semibold tracking-tight">Tateno</span>
           </div>
           <div className="flex gap-8 text-ink-3 text-sm">

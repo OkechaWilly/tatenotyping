@@ -143,7 +143,7 @@ export default function LessonsPage() {
                 </p>
               </div>
             </div>
-            <Link href="/lessons/reference" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-ink text-white font-bold text-[13px] hover:bg-ink/90 transition-all group shadow-lg shadow-ink/10">
+            <Link href="/lessons/reference" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-ink text-bg font-bold text-[13px] hover:bg-ink/90 transition-all group shadow-lg shadow-ink/10">
               View Reference Guide
               <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </Link>

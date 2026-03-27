@@ -82,7 +82,7 @@ export default function ProfilePage() {
                 <Share2 size={16} />
                 Share Profile
               </button>
-              <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-white font-bold text-xs shadow-lg shadow-accent/20 hover:scale-105 transition-all">
+              <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-bg font-bold text-xs shadow-lg shadow-accent/20 hover:scale-105 transition-all">
                 <Download size={16} />
                 Get Certificate
               </button>
@@ -151,7 +151,7 @@ export default function ProfilePage() {
                   <p className="text-xs text-white/80 leading-relaxed mb-6">
                     You are in the top 12% of typists this month. Keep practicing to reach Master level!
                   </p>
-                  <Link href="/compete" className="block w-full text-center py-3 bg-white text-accent rounded-xl text-xs font-bold hover:bg-ink-1 hover:text-white transition-all shadow-lg">
+                  <Link href="/compete" className="block w-full text-center py-3 bg-white text-accent rounded-xl text-xs font-bold hover:bg-ink hover:text-bg transition-all shadow-lg">
                     View Leaderboard
                   </Link>
                </div>

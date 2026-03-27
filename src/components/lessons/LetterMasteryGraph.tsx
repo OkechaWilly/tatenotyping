@@ -42,7 +42,7 @@ export default function LetterMasteryGraph({ keyStats }: LetterMasteryGraphProps
               {/* Tooltip */}
               {hasData && (
                 <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                  <div className="bg-ink text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap font-mono">
+                  <div className="bg-ink text-bg text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap font-mono">
                     {char.toUpperCase()}: {accuracy}% ({stats.attempts} taps)
                   </div>
                 </div>

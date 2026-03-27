@@ -61,7 +61,7 @@ export default function ProfileHero() {
       <div className="absolute -right-10 -top-10 w-[220px] h-[220px] rounded-full bg-[radial-gradient(circle,rgba(196,67,26,0.06)_0%,transparent_70%)] pointer-events-none" />
 
       <div className="flex items-center gap-5">
-        <div className="w-16 h-16 rounded-full bg-ink text-white flex items-center justify-center font-display text-[22px] font-medium shrink-0 relative">
+        <div className="w-16 h-16 rounded-full bg-ink text-bg flex items-center justify-center font-display text-[22px] font-medium shrink-0 relative">
           {profile.username?.substring(0, 2).toUpperCase() || "JD"}
           <div className="absolute -inset-1 rounded-full border-2 border-accent opacity-60" />
         </div>
