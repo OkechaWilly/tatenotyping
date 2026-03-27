@@ -45,6 +45,8 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   { key: "all-intermed", title: "Intermediate +",     icon: "📚", category: "learning",    description: "Complete all Intermediate lessons." },
   { key: "zen-master",   title: "Zen Master",         icon: "🧘", category: "learning",    description: "Complete all lessons across all tiers." },
   { key: "drill-first",  title: "Smart Driller",      icon: "🔩", category: "learning",    description: "Complete your first adaptive drill." },
+  { key: "ghost-slayer", title: "Ghost Slayer",        icon: "👻", category: "speed",       description: "Beat your personal ghost in a race." },
+  { key: "speed-racer",  title: "Speed Racer",         icon: "🏎️", category: "speed",       description: "Complete a Ghost Race session." },
 ];
 
 /** Check which achievements should unlock given current session + profile stats */
