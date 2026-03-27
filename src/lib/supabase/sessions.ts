@@ -65,17 +65,14 @@ export async function saveSession(params: {
       );
 
       if (diffDays === 0) {
-        // Another session today, streak unchanged
         newStreak = profile.streak_current;
       } else if (diffDays === 1) {
-        // Consecutive day — increment streak
         newStreak = profile.streak_current + 1;
       } else {
-        // Gap detected — reset streak
         newStreak = 1;
       }
     } else {
-      newStreak = 1; // First session ever
+      newStreak = 1;
     }
 
     const newBestStreak = Math.max(profile.streak_best || 0, newStreak);
@@ -89,7 +86,39 @@ export async function saveSession(params: {
         streak_best: newBestStreak,
       })
       .eq("id", userId);
+
+    // 3. Unlock achievements
+    const { getNewAchievements } = await import("@/data/achievements");
+    const { data: existingAchievements } = await supabase
+      .from("achievements")
+      .select("achievement_key")
+      .eq("user_id", userId);
+
+    const { count: sessionCount } = await supabase
+      .from("sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId);
+
+    const existingKeys = (existingAchievements || []).map((a) => a.achievement_key);
+    const newlyUnlocked = getNewAchievements({
+      wpm: stats.wpm,
+      accuracy: stats.accuracy,
+      errors: stats.errors,
+      streakCurrent: newStreak,
+      totalSessions: sessionCount || 0,
+      existing: existingKeys,
+    });
+
+    for (const key of newlyUnlocked) {
+      await supabase.from("achievements").upsert(
+        { user_id: userId, achievement_key: key, unlocked_at: new Date().toISOString() },
+        { onConflict: "user_id,achievement_key" }
+      );
+    }
+
+    return { success: true, xpGained, newlyUnlocked };
   }
+
 
   // 3. Update weak keys
   if (keyStats) {

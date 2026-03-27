@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 export default function WeakKeys() {
   const { user } = useAuth();
@@ -56,7 +57,7 @@ export default function WeakKeys() {
       <div>
         <div className="flex items-baseline justify-between mb-4">
           <div className="font-mono text-[10px] font-medium tracking-[0.12em] text-ink-3 uppercase">Weak Keys</div>
-          <button className="font-mono text-[10px] text-accent hover:underline">Train →</button>
+          <Link href="/drill" className="font-mono text-[10px] text-accent hover:underline">Train →</Link>
         </div>
 
         <div className="flex flex-wrap gap-2 sm:gap-3 content-start">
