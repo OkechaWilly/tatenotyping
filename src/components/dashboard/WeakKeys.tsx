@@ -30,7 +30,7 @@ export default function WeakKeys() {
         const mapped = data.map(item => {
           const errRate = Math.round((item.error_count / Math.max(1, item.total_attempts)) * 100);
           let cls = "bg-surface-2 border-border-strong text-ink-3 shadow-[0_2px_0_var(--border-strong)]";
-          
+
           if (errRate > 5) {
             cls = "bg-[#C4431A26] border-accent text-accent shadow-[0_2px_0_#943212]";
           } else if (errRate > 2) {
@@ -67,7 +67,7 @@ export default function WeakKeys() {
           ) : (
             weakKeys.map((item) => (
               <div key={item.key} className="flex flex-col items-center gap-[3px]">
-                <div 
+                <div
                   className={`w-[30px] sm:w-[34px] h-[30px] sm:h-[34px] rounded-[5px] border flex items-center justify-center font-mono text-[12px] sm:text-[13px] font-medium transition-transform duration-150 hover:-translate-y-[2px] cursor-default ${item.cls}`}
                 >
                   {item.key}
@@ -78,7 +78,7 @@ export default function WeakKeys() {
           )}
         </div>
       </div>
-      
+
       <div className="mt-4 border-t border-border pt-3 font-mono text-[10px] text-ink-3 leading-[1.6]">
         Error rate calculated across session history. Keys above 5% flagged for practice.
       </div>
