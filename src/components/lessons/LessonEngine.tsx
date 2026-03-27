@@ -27,6 +27,7 @@ export default function LessonEngine({ initialLessonId, onBack }: LessonEnginePr
   const [passed, setPassed] = useState(false);
   const [drillMode, setDrillMode] = useState(false);
   const [drillText, setDrillText] = useState("");
+  const [startTime, setStartTime] = useState<number | null>(null);
 
   const [selectedCategory, setSelectedCategory] = useState<string>("Beginner");
 
@@ -41,15 +42,24 @@ export default function LessonEngine({ initialLessonId, onBack }: LessonEnginePr
     const { createClient } = (await import("@/lib/supabase/client"));
     const supabase = createClient();
 
-    // Save lesson progress
+    // Save lesson progress (increment attempts each run)
+    const { data: existingProgress } = await supabase
+      .from("lesson_progress")
+      .select("attempts, best_wpm, best_accuracy, completed")
+      .eq("user_id", user.id)
+      .eq("lesson_id", currentLesson.id)
+      .single();
+
     await supabase.from("lesson_progress").upsert({
       user_id: user.id,
       lesson_id: currentLesson.id,
-      completed: isSuccess,
-      best_wpm: stats.wpm,
-      best_accuracy: stats.accuracy,
-      completed_at: new Date().toISOString(),
+      completed: isSuccess || existingProgress?.completed === true,
+      best_wpm: Math.max(stats.wpm, existingProgress?.best_wpm || 0),
+      best_accuracy: Math.max(stats.accuracy, existingProgress?.best_accuracy || 0),
+      attempts: (existingProgress?.attempts || 0) + 1,
+      completed_at: isSuccess ? new Date().toISOString() : undefined,
     }, { onConflict: 'user_id,lesson_id' });
+
 
     // Save 'full-keyboard' achievement if Lesson 8 is passed
     if (currentLesson.id === "lesson-8" && isSuccess) {
@@ -62,15 +72,17 @@ export default function LessonEngine({ initialLessonId, onBack }: LessonEnginePr
 
     // Save session
     const { saveSession } = await import("@/lib/supabase/sessions");
+    const duration = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
+    
     await saveSession({
       userId: user.id,
       stats,
       mode: "lesson",
-      duration: 0,
+      duration,
       textUsed: drillMode ? drillText : currentLesson.text,
       keyStats,
     });
-  }, [user, currentLesson, drillMode, drillText]);
+  }, [user, currentLesson, drillMode, drillText, startTime]);
 
   const engine = useTypingEngine(mounted ? (drillMode ? drillText : currentLesson.text) : "", 0, "Beginner", handleLessonComplete);
   const { text, typed, isActive, isFinished, startTest, resetTest, handleInput, inputRef, keyStats } = engine;
@@ -86,6 +98,17 @@ export default function LessonEngine({ initialLessonId, onBack }: LessonEnginePr
       resetTest(currentLesson.text);
     }
   }, [currentLesson.text, resetTest, mounted]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && !isActive && !isFinished) {
+        setStartTime(Date.now());
+        startTest();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isActive, isFinished, startTest]);
 
   const generateDrill = () => {
     const weakKeys = Object.entries(keyStats)
@@ -267,7 +290,10 @@ export default function LessonEngine({ initialLessonId, onBack }: LessonEnginePr
           {!isActive && !isFinished && (
             <div
               className="absolute inset-0 flex items-center justify-center rounded-lg cursor-text transition-all duration-200 group bg-surface/40 backdrop-blur-[1px]"
-              onClick={startTest}
+              onClick={() => {
+                setStartTime(Date.now());
+                startTest();
+              }}
             >
               <div className="flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-full text-[13px] font-bold shadow-xl transition-all duration-200 pointer-events-none group-hover:-translate-y-1">
                 Start {drillMode ? "Mastery Drill" : "Lesson"}

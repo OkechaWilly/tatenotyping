@@ -22,7 +22,7 @@ export async function saveSession(params: {
     best_wpm: stats.bestWpm,
     mode,
     duration,
-    text_used: textUsed.substring(0, 1000), // Limit text length
+    text_used: textUsed.substring(0, 1000),
   });
 
   if (sessionError) {
@@ -31,31 +31,64 @@ export async function saveSession(params: {
   }
 
   // 2. Update profile stats (XP, level, streak)
-  // Simple XP formula: WPM * Accuracy% * (Duration/15) + 10 base
-  const xpGained = Math.round((stats.wpm * (stats.accuracy / 100)) * (duration > 0 ? duration / 15 : 1) + 10);
+  const xpGained = Math.round(
+    (stats.wpm * (stats.accuracy / 100)) * (duration > 0 ? duration / 15 : 1) + 10
+  );
 
-  // Get current profile for streak logic
   const { data: profile } = await supabase
     .from("profiles")
-    .select("xp, level")
+    .select("xp, level, streak_current, streak_best")
     .eq("id", userId)
     .single();
 
   if (profile) {
     const newXp = profile.xp + xpGained;
-    const newLevel = Math.floor(newXp / 4000) + 1; // 4000 XP per level
-    
-    const { error: profileError } = await supabase
+    const newLevel = Math.floor(newXp / 4000) + 1;
+
+    // Streak logic: look at the last 2 sessions (the one just saved + prior)
+    const { data: lastSessions } = await supabase
+      .from("sessions")
+      .select("created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(2);
+
+    let newStreak = profile.streak_current;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (lastSessions && lastSessions.length >= 2) {
+      const prevDate = new Date(lastSessions[1].created_at);
+      prevDate.setHours(0, 0, 0, 0);
+      const diffDays = Math.round(
+        (today.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (diffDays === 0) {
+        // Another session today, streak unchanged
+        newStreak = profile.streak_current;
+      } else if (diffDays === 1) {
+        // Consecutive day — increment streak
+        newStreak = profile.streak_current + 1;
+      } else {
+        // Gap detected — reset streak
+        newStreak = 1;
+      }
+    } else {
+      newStreak = 1; // First session ever
+    }
+
+    const newBestStreak = Math.max(profile.streak_best || 0, newStreak);
+
+    await supabase
       .from("profiles")
       .update({
         xp: newXp,
         level: newLevel,
+        streak_current: newStreak,
+        streak_best: newBestStreak,
       })
       .eq("id", userId);
-
-    if (profileError) {
-      console.error("Error updating profile:", profileError);
-    }
   }
 
   // 3. Update weak keys
@@ -63,7 +96,6 @@ export async function saveSession(params: {
     for (const [key, data] of Object.entries(keyStats)) {
       if (data.attempts === 0) continue;
 
-      // Increment errors and attempts in weak_keys table
       const { data: existing } = await supabase
         .from("weak_keys")
         .select("error_count, total_attempts")
@@ -77,19 +109,17 @@ export async function saveSession(params: {
           .update({
             error_count: existing.error_count + data.errors,
             total_attempts: existing.total_attempts + data.attempts,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq("user_id", userId)
           .eq("key_char", key);
       } else {
-        await supabase
-          .from("weak_keys")
-          .insert({
-            user_id: userId,
-            key_char: key,
-            error_count: data.errors,
-            total_attempts: data.attempts
-          });
+        await supabase.from("weak_keys").insert({
+          user_id: userId,
+          key_char: key,
+          error_count: data.errors,
+          total_attempts: data.attempts,
+        });
       }
     }
   }
