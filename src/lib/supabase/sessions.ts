@@ -11,6 +11,7 @@ export async function saveSession(params: {
 }) {
   const supabase = createClient();
   const { userId, stats, mode, duration, textUsed, keyStats } = params;
+  let newlyUnlockedTracker: string[] = [];
 
   // 1. Save the session
   const { error: sessionError } = await supabase.from("sessions").insert({
@@ -108,15 +109,14 @@ export async function saveSession(params: {
       totalSessions: sessionCount || 0,
       existing: existingKeys,
     });
+    newlyUnlockedTracker = newlyUnlocked;
 
-    for (const key of newlyUnlocked) {
+    for (const key of newlyUnlockedTracker) {
       await supabase.from("achievements").upsert(
         { user_id: userId, achievement_key: key, unlocked_at: new Date().toISOString() },
         { onConflict: "user_id,achievement_key" }
       );
     }
-
-    return { success: true, xpGained, newlyUnlocked };
   }
 
 
@@ -153,5 +153,5 @@ export async function saveSession(params: {
     }
   }
 
-  return { success: true, xpGained };
+  return { success: true, xpGained, newlyUnlocked: newlyUnlockedTracker };
 }

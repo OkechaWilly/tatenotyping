@@ -270,8 +270,13 @@ export default function CompetePage() {
 
 // ─── Ghost Race Engine ──────────────────────────────────────────────────────
 
+import { useToast } from "@/context/ToastContext";
+// ... Note: the import goes to the top automatically since I am editing the engine component only here... actually I better just grab it. Wait, I will edit the RaceEngine block.
+// Wait, I will just edit the race engine directly, but I must import it at the top. I'll pass useToast to RaceEngine, wait, it's all in one file, so I can just import useToast at the top of the file!
+
 function RaceEngine({ onExit, raceText }: { onExit: () => void; raceText: string }) {
   const { user } = useAuth();
+  const { addAchievementToast } = useToast();
   const [bestWpm, setBestWpm] = useState<number>(60); // Default ghost speed
   const [ghostProgress, setGhostProgress] = useState(0);
   const [raceStarted, setRaceStarted] = useState(false);
@@ -309,7 +314,7 @@ function RaceEngine({ onExit, raceText }: { onExit: () => void; raceText: string
       const duration = startTimeRef.current
         ? Math.round((Date.now() - startTimeRef.current) / 1000)
         : 0;
-      await saveSession({
+      const res = await saveSession({
         userId: user.id,
         stats,
         mode: "ghost-race",
@@ -318,16 +323,21 @@ function RaceEngine({ onExit, raceText }: { onExit: () => void; raceText: string
         keyStats,
       });
 
+      if (res.newlyUnlocked) {
+         res.newlyUnlocked.forEach((key: string) => addAchievementToast(key));
+      }
+
       // Unlock ghost-slayer achievement
       if (won) {
         const supabase = createClient();
-        await supabase.from("achievements").upsert(
-          { user_id: user.id, achievement_key: "ghost-slayer", unlocked_at: new Date().toISOString() },
-          { onConflict: "user_id,achievement_key" }
-        );
+        const { data: existing } = await supabase.from("achievements").select("*").eq("user_id", user.id).eq("achievement_key", "ghost-slayer").single();
+        if (!existing) {
+          await supabase.from("achievements").insert({ user_id: user.id, achievement_key: "ghost-slayer", unlocked_at: new Date().toISOString() });
+          addAchievementToast("ghost-slayer");
+        }
       }
     },
-    [user, bestWpm, raceText]
+    [user, bestWpm, raceText, addAchievementToast]
   );
 
   const engine = useTypingEngine(raceText, 0, "Beginner", handleComplete);

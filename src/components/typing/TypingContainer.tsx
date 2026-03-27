@@ -7,10 +7,12 @@ import { useTypingEngine, TypingStats } from "@/hooks/useTypingEngine";
 import { useAuth } from "@/context/AuthContext";
 import { TYPING_DATA } from "@/data/typingData";
 import { useEffect, useState, useCallback } from "react";
+import { useToast } from "@/context/ToastContext";
 
 export default function TypingContainer() {
   const { duration, mode, difficulty } = useTypingContext();
   const { user } = useAuth();
+  const { addAchievementToast } = useToast();
   const [text, setText] = useState("");
   const [rwCategory, setRwCategory] = useState("email");
   
@@ -41,7 +43,7 @@ export default function TypingContainer() {
     if (!user) return; 
     
     const { saveSession } = await import("@/lib/supabase/sessions");
-    await saveSession({
+    const res = await saveSession({
       userId: user.id,
       stats,
       mode,
@@ -49,7 +51,11 @@ export default function TypingContainer() {
       textUsed: text,
       keyStats,
     });
-  }, [user, mode, duration, text]);
+
+    if (res.newlyUnlocked) {
+      res.newlyUnlocked.forEach((key: string) => addAchievementToast(key));
+    }
+  }, [user, mode, duration, text, addAchievementToast]);
 
   const handlePrescriptionDrill = useCallback((weakKeys: string[]) => {
     const data = TYPING_DATA.words;

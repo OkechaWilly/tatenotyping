@@ -1,12 +1,14 @@
 "use client";
 
+import CurriculumMap from "@/components/lessons/CurriculumMap";
+
+// ... [existing imports]
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import AppLayout from "@/components/layout/AppLayout";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 import { LESSONS } from "@/data/lessons";
-import LessonCard from "@/components/lessons/LessonCard";
 import LessonEngine from "@/components/lessons/LessonEngine";
 import { BookOpen, HelpCircle, ChevronRight } from "lucide-react";
 
@@ -100,34 +102,12 @@ export default function LessonsPage() {
             )}
           </div>
 
-          {/* Lessons Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {LESSONS.map((lesson, idx) => {
-              const lessonProgress = progress[lesson.id] || null;
-              
-              // Logic: 
-              // 1. First lesson is always unlocked
-              // 2. Guest user (no user) has all unlocked
-              // 3. Authenticated user: unlocked if previous lesson is completed
-              const isFirst = idx === 0;
-              const prevLessonId = idx > 0 ? LESSONS[idx - 1].id : null;
-              const prevCompleted = prevLessonId ? progress[prevLessonId]?.completed : false;
-              
-              const isLocked = user ? (!isFirst && !prevCompleted) : false;
-              const isActive = user ? (isFirst || (prevCompleted && !lessonProgress?.completed)) : isFirst;
-
-              return (
-                <LessonCard 
-                  key={lesson.id}
-                  lesson={{...lesson, index: idx}}
-                  progress={lessonProgress}
-                  isLocked={isLocked}
-                  isActive={isActive}
-                  onSelect={() => setSelectedLessonId(lesson.id)}
-                />
-              );
-            })}
-          </div>
+          {/* New Curriculum Map */}
+          <CurriculumMap 
+             progress={progress} 
+             isGuest={!user} 
+             onSelect={(id) => setSelectedLessonId(id)} 
+          />
 
           {/* Help Footer */}
           <div className="mt-16 p-8 rounded-3xl bg-surface-2 border border-border-strong flex flex-col md:flex-row items-center justify-between gap-8">

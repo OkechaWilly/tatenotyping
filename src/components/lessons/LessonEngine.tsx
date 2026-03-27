@@ -8,6 +8,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Zap, CheckCircle, ChevronLeft } from "lucide-react";
 
+import { useToast } from "@/context/ToastContext";
+
 interface LessonEngineProps {
   initialLessonId?: string;
   onBack: () => void;
@@ -15,6 +17,7 @@ interface LessonEngineProps {
 
 export default function LessonEngine({ initialLessonId, onBack }: LessonEngineProps) {
   const { user } = useAuth();
+  const { addAchievementToast } = useToast();
   const [lessonIndex, setLessonIndex] = useState(() => {
     if (initialLessonId) {
       const idx = LESSONS.findIndex(l => l.id === initialLessonId);
@@ -60,21 +63,24 @@ export default function LessonEngine({ initialLessonId, onBack }: LessonEnginePr
       completed_at: isSuccess ? new Date().toISOString() : undefined,
     }, { onConflict: 'user_id,lesson_id' });
 
-
     // Save 'full-keyboard' achievement if Lesson 8 is passed
     if (currentLesson.id === "lesson-8" && isSuccess) {
-      await supabase.from("achievements").upsert({
-        user_id: user.id,
-        achievement_key: "full-keyboard",
-        unlocked_at: new Date().toISOString()
-      }, { onConflict: 'user_id,achievement_key' });
+      const { data: hasKeyboard } = await supabase.from("achievements").select("*").eq("user_id", user.id).eq("achievement_key", "full-keyboard").single();
+      if (!hasKeyboard) {
+         await supabase.from("achievements").insert({
+           user_id: user.id,
+           achievement_key: "full-keyboard",
+           unlocked_at: new Date().toISOString()
+         });
+         addAchievementToast("full-keyboard");
+      }
     }
 
     // Save session
     const { saveSession } = await import("@/lib/supabase/sessions");
     const duration = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
     
-    await saveSession({
+    const res = await saveSession({
       userId: user.id,
       stats,
       mode: "lesson",
@@ -82,7 +88,11 @@ export default function LessonEngine({ initialLessonId, onBack }: LessonEnginePr
       textUsed: drillMode ? drillText : currentLesson.text,
       keyStats,
     });
-  }, [user, currentLesson, drillMode, drillText, startTime]);
+
+    if (res.newlyUnlocked) {
+       res.newlyUnlocked.forEach((key: string) => addAchievementToast(key));
+    }
+  }, [user, currentLesson, drillMode, drillText, startTime, addAchievementToast]);
 
   const engine = useTypingEngine(mounted ? (drillMode ? drillText : currentLesson.text) : "", 0, "Beginner", handleLessonComplete);
   const { text, typed, isActive, isFinished, startTest, resetTest, handleInput, inputRef, keyStats } = engine;

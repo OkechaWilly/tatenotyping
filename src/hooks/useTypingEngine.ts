@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useSettings } from "@/context/SettingsContext";
 
 export interface TypingStats {
   wpm: number;
@@ -16,6 +17,7 @@ export function useTypingEngine(
   difficulty: Difficulty = "Intermediate",
   onComplete?: (stats: TypingStats, keyStats: Record<string, { attempts: number; errors: number }>) => void
 ) {
+  const { playKeystrokeSound, playErrorSound } = useSettings();
   const [text, setText] = useState(initialText);
   const [typed, setTyped] = useState("");
   const [isActive, setIsActive] = useState(false);
@@ -136,6 +138,7 @@ export function useTypingEngine(
       }));
 
       if (charTyped !== charExpected) {
+        playErrorSound();
         setErrors((prev) => prev + 1);
         setConsecutiveErrors(prev => prev + 1);
 
@@ -184,6 +187,7 @@ export function useTypingEngine(
           return;
         }
       } else {
+        playKeystrokeSound();
         setConsecutiveErrors(0);
         setShiftMistakeCount(0);
       }

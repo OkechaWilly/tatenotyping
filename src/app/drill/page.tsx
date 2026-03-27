@@ -7,6 +7,7 @@ import { useTypingEngine } from "@/hooks/useTypingEngine";
 import Keyboard from "@/components/lessons/Keyboard";
 import { ChevronLeft, Zap, Target, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/context/ToastContext";
 
 // Word lists weighted by how common each key appears
 const WORD_BANK: Record<string, string[]> = {
@@ -62,6 +63,7 @@ interface WeakKeyData {
 export default function SmartDrillPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { addAchievementToast } = useToast();
   const [weakKeys, setWeakKeys] = useState<WeakKeyData[]>([]);
   const [drillText, setDrillText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -77,7 +79,7 @@ export default function SmartDrillPage() {
       const duration = startTimeRef.current
         ? Math.round((Date.now() - startTimeRef.current) / 1000)
         : 0;
-      await saveSession({
+      const res = await saveSession({
         userId: user.id,
         stats,
         mode: "smart-drill",
@@ -85,8 +87,12 @@ export default function SmartDrillPage() {
         textUsed: drillText,
         keyStats,
       });
+
+      if (res.newlyUnlocked) {
+        res.newlyUnlocked.forEach((key: string) => addAchievementToast(key));
+      }
     },
-    [user, drillText]
+    [user, drillText, addAchievementToast]
   );
 
   const engine = useTypingEngine(

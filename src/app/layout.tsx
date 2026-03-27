@@ -21,6 +21,8 @@ export const metadata: Metadata = {
 
 import { AuthProvider } from "@/context/AuthContext";
 import { TypingProvider } from "@/context/TypingContext";
+import { SettingsProvider } from "@/context/SettingsContext";
+import { ToastProvider } from "@/context/ToastContext";
 import { Suspense } from "react";
 
 export default function RootLayout({
@@ -31,13 +33,17 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${firaSans.variable} ${firaCode.variable} font-body`}>
       <body className="bg-bg text-ink min-h-screen flex flex-col antialiased">
-        <AuthProvider>
-          <Suspense fallback={null}>
-            <TypingProvider>
-              {children}
-            </TypingProvider>
-          </Suspense>
-        </AuthProvider>
+        <SettingsProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <Suspense fallback={null}>
+                <TypingProvider>
+                  {children}
+                </TypingProvider>
+              </Suspense>
+            </AuthProvider>
+          </ToastProvider>
+        </SettingsProvider>
       </body>
     </html>
   );
