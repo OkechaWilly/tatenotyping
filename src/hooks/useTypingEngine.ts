@@ -214,7 +214,8 @@ export function useTypingEngine(
        if (wpmIntervalRef.current) clearInterval(wpmIntervalRef.current);
     }
 
-  }, [isActive, isFinished, text, typed, startTest, difficulty, addNotification, consecutiveErrors, playErrorSound, playKeystrokeSound]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, text, typed, startTest]);
 
   // Timer & Best WPM effect
   useEffect(() => {

@@ -30,7 +30,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   const getAudioContext = () => {
     if (!audioCtx) {
-      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const ctx = new (window.AudioContext || (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!)();
       setAudioCtx(ctx);
       return ctx;
     }
