@@ -101,7 +101,7 @@ export default function SmartDrillPage() {
     "Beginner",
     handleComplete
   );
-  const { text, typed, isActive, isFinished, startTest, resetTest, handleInput, inputRef, keyStats } = engine;
+  const { text, typed, isActive, isFinished, startTest, resetTest, handleInput, inputRef } = engine;
   const targetKey = text[Math.min(typed.length, text.length - 1)];
 
   useEffect(() => {

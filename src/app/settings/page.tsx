@@ -66,7 +66,7 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <h4 className="font-bold text-ink text-[14px]">Mechanical Keyboard Sounds</h4>
-                      <p className="text-[12px] text-ink-3">Play a satisfying "thock" sound on every keystroke</p>
+                      <p className="text-[12px] text-ink-3">Play a satisfying &quot;thock&quot; sound on every keystroke</p>
                     </div>
                   </div>
                   <button

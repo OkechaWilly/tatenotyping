@@ -30,7 +30,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   const getAudioContext = () => {
     if (!audioCtx) {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       setAudioCtx(ctx);
       return ctx;
     }
@@ -61,7 +61,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
       osc.start();
       osc.stop(ctx.currentTime + 0.05);
-    } catch (e) {
+    } catch {
       // Ignore audio initialization errors before user interaction
     }
   };
@@ -86,7 +86,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
       osc.start();
       osc.stop(ctx.currentTime + 0.15);
-    } catch (e) {
+    } catch {
       // Ignore audio errors
     }
   };
@@ -113,7 +113,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
       osc.start();
       osc.stop(ctx.currentTime + 0.5);
-    } catch (e) {
+    } catch {
       // Ignore audio errors
     }
   };

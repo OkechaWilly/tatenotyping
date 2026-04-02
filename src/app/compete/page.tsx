@@ -254,7 +254,7 @@ export default function CompetePage() {
                 </h3>
                 <div className="flex flex-col gap-2 text-xs text-ink-3 leading-relaxed">
                   <p>👻 Your ghost moves at your <span className="text-ink font-medium">personal best WPM</span>.</p>
-                  <p>🏎️ If you overtake it, you've <span className="text-green font-medium">set a new record</span>.</p>
+                  <p>🏎️ If you overtake it, you&apos;ve <span className="text-green font-medium">set a new record</span>.</p>
                   <p>⚡ Each race result is saved and updates your best.</p>
                   <p>🏆 Beat your ghost to earn the <span className="text-accent font-medium">Ghost Slayer</span> badge.</p>
                 </div>

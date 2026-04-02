@@ -214,7 +214,7 @@ export function useTypingEngine(
        if (wpmIntervalRef.current) clearInterval(wpmIntervalRef.current);
     }
 
-  }, [isActive, isFinished, text, typed, startTest, difficulty, addNotification, consecutiveErrors]);
+  }, [isActive, isFinished, text, typed, startTest, difficulty, addNotification, consecutiveErrors, playErrorSound, playKeystrokeSound]);
 
   // Timer & Best WPM effect
   useEffect(() => {

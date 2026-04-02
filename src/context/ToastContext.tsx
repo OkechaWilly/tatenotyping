@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 import { ACHIEVEMENT_DEFS } from "@/data/achievements";
 
 export interface ToastMessage {
@@ -35,14 +35,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     // Play a delightful chime using Web Audio API if sound is enabled
     try {
       if (localStorage.getItem("tateno_sound") !== "false") {
-        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const ctx = new (window.AudioContext || (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!)();
         if (ctx.state === "suspended") ctx.resume();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sine";
-        osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
-        osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2); // G5
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2);
         gain.gain.setValueAtTime(0, ctx.currentTime);
         gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.05);
         gain.gain.setValueAtTime(0.3, ctx.currentTime + 0.25);
@@ -52,9 +52,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         osc.start();
         osc.stop(ctx.currentTime + 0.6);
       }
-    } catch(e) {}
+    } catch {
+      // Ignore audio initialization errors
+    }
 
-    // Auto dismiss after 5 seconds
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== newToast.id));
     }, 5000);
@@ -63,7 +64,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ addAchievementToast }}>
       {children}
-      
+
       {/* Toast Container */}
       <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none">
         {toasts.map((toast) => (

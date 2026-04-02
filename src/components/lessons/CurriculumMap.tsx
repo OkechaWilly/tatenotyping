@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Lock, Play, Star } from "lucide-react";
-import { LESSONS, Lesson } from "@/data/lessons";
+import { LESSONS } from "@/data/lessons";
 
 interface LessonProgress {
   lesson_id: string;

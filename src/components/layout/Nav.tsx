@@ -13,6 +13,7 @@ export default function Nav() {
   const links = [
     { name: "Practice", href: "/type" },
     { name: "Lessons", href: "/lessons" },
+    { name: "Chat", href: "/chat-drill" },
     { name: "Dashboard", href: "/dashboard" },
     { name: "Profile", href: "/profile" },
     { name: "Compete", href: "/compete" },
